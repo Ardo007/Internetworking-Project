@@ -1,75 +1,81 @@
-# Zeek processing
+# Live capture pipeline
 
-The processor runs Zeek against every completed packet capture in a
-fixed input folder. It does not assign labels or depend on the GraphTunnel
-dataset structure.
+Two scripts, meant to run side by side: `capture_live.py` writes rotating
+capture chunks to disk, and `run_zeek.py` watches that folder and turns each
+finished chunk into Zeek logs.
+
+```text
+datas/
+├── captures/   <- capture_live.py writes rotated .pcapng chunks here
+└── zeek/       <- run_zeek.py writes one log folder per processed chunk
+```
 
 ## Requirements
 
 - Python 3
-- Docker Desktop installed and running
+- Wireshark installed (provides `dumpcap` and the Npcap driver), for
+  `capture_live.py`
+- Docker Desktop installed and running, for `run_zeek.py`
 - The `zeek/zeek:lts` Docker image (Docker downloads it automatically if needed)
 
-## Input and output folders
+## 1. Capture: `capture_live.py`
 
-Place `.pcap` and `.pcapng` files directly inside `datas/captures`:
-
-```text
-datas/
-├── captures/
-│   ├── capture_001.pcapng
-│   └── capture_002.pcap
-└── zeek/
-```
-
-The script scans files directly inside `datas/captures`; it does not scan nested
-folders. Files with other extensions are ignored.
-
-From the project root, run:
+Wraps `dumpcap`'s own ring buffer. No timing loop is needed — dumpcap handles
+rotation, filenames, and disk-capping itself, and there's no packet loss at
+rotation boundaries.
 
 ```text
-python scripts/run_zeek.py
+python scripts/capture_live.py --list-interfaces
+python scripts/capture_live.py --interface 6
 ```
 
-## How the script works
+- `--duration` (default 30s): how often a new chunk starts. This is a capture
+  cadence, not the statistical analysis window — tunneling signal is
+  detected over minutes of traffic spanning many chunks, not within one.
+- `--files` (default 120): ring buffer cap. Once reached, dumpcap deletes the
+  oldest chunk before starting the next, so this is also your disk cap. The
+  downstream processor must keep up with capture speed, or it will lose
+  chunks it hasn't read yet.
+- `--output-dir` (default `datas/captures`), `--prefix` (default `capture`).
 
-1. It finds all PCAP and PCAPNG files in `datas/captures` and sorts them by
-   filename.
-2. It creates a separate output folder for each capture using the filename
-   without its extension. For example, `capture_001.pcapng` uses
-   `datas/zeek/capture_001`.
-3. It checks that Docker is installed and that the Docker engine is responding.
-4. For each capture, it starts a temporary `zeek/zeek:lts` container. The input
-   folder is mounted read-only, while the capture's output folder is mounted as
-   writable.
-5. Zeek reads the saved capture and writes JSON-formatted protocol logs to the
-   output folder. The temporary container is removed after processing, but the
-   generated logs remain on the computer.
-6. The script prints each generated log path and reports how many captures were
-   processed.
+Chunks are named the way dumpcap always names ring-buffer files:
+`<prefix>_<00001>_<YYYYmmddHHMMSS>.pcapng`. Stop with Ctrl+C; dumpcap closes
+its current chunk cleanly before exiting.
 
-The resulting structure looks like:
+## 2. Processing: `run_zeek.py`
 
 ```text
-datas/
-└── zeek/
-    ├── capture_001/
-    │   ├── conn.log
-    │   └── dns.log
-    └── capture_002/
-        ├── conn.log
-        └── dns.log
+python scripts/run_zeek.py            # watch mode (default)
+python scripts/run_zeek.py --once     # process what's sealed, then exit
 ```
 
-The exact logs depend on the traffic in each capture. For example, Zeek creates
-`dns.log` only when it finds DNS activity. A successful capture with no
-recognised traffic may produce no log files.
+1. Checks Docker is installed and responding, then starts one long-lived
+   `zeek/zeek:lts` container (`sleep infinity`) with the whole project mounted
+   at `/work`. Every chunk is processed via `docker exec` against that same
+   container instead of paying a `docker run` startup cost (1-3s) on every
+   rotation.
+2. **Sealing rule:** a chunk matching dumpcap's ring-buffer naming is only
+   read once the next index in its sequence exists — reading a chunk dumpcap
+   still has open would race its writes. A file that doesn't match that
+   naming (e.g. dropped in by hand) is treated as already complete.
+   - Corollary: the *last* chunk of a capture that has stopped for good never
+     gets a "next index" and is never processed. This is fine while
+     `capture_live.py` keeps running, but a one-off/finished capture set
+     using the same naming convention (GraphTunnel's own captures included)
+     will permanently strand its highest-indexed file unless it was already
+     processed before capture stopped.
+3. For each sealed chunk, it creates `datas/zeek/<chunk stem>/` and runs Zeek
+   there with JSON logging (`-C -r <chunk> LogAscii::use_json=T`).
+4. A chunk is skipped if its output folder already contains a non-empty
+   `.log` file — reprocessing is safe to re-run and idempotent.
+5. In watch mode it polls every `--interval` seconds (default 5) and runs
+   until Ctrl+C, which tears down the long-lived container before exiting.
+   `--once` processes whatever is currently sealed and exits without
+   watching. `--capture-dir` / `--zeek-dir` override the default folders.
 
-Only place completed captures in `datas/captures`; never process a file that a
-capture tool is still writing. Existing non-empty output folders are not
-overwritten, so they must be moved or removed before processing the same capture
-again. Two input files with the same base name, such as `sample.pcap` and
-`sample.pcapng`, are rejected because they would share one output folder.
+The exact logs depend on the traffic in each chunk — Zeek creates `dns.log`
+only when it finds DNS activity, so a chunk with no recognised traffic may
+produce no log files at all.
 
 
 
