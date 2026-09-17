@@ -18,8 +18,9 @@ Rules (both configurations unless stated):
                  one-window gap between segments, so every tool is in every
                  split.
   wildcard       config A (stress test): all 13 held out.
-                 config B (primary, hard negatives): 00000-00005 train,
-                 00006 val, 00007-00012 held out.
+                 config B (primary, hard negatives): of 00000-00006, the
+                 capture with the most windows is val and the other six
+                 train; 00007-00012 held out.
   unknownTunnel  held out (unseen tools); never used for fitting or
   crossEndPoint  model selection. crossEndPoint is iodine on Android, so it
                  is reported as an unseen platform, not an unseen tool.
@@ -28,13 +29,19 @@ Rules (both configurations unless stated):
                  positive rate); the others, in time order, are split into
                  contiguous 70/15/15 time blocks with one-window gaps.
 
-Class imbalance is handled with class weights in training
-(Build_model uses sklearn's "balanced" weights); cap_rows_per_window can
-additionally limit how many rows one window contributes to fitting.
+Sampling. Train and val rows are capped per (capture, window) so busy
+windows don't dominate fitting: ROW_CAPS rows per window (wildcard gets a
+higher cap so config B keeps enough hard negatives), chosen with a fixed
+SAMPLING_SEED. Each capture's random draw depends only on the seed, the
+capture_id and its rows, so every run and feature set sees the same rows.
+Domain aggregates are computed on all rows before sampling, and test and
+held-out rows are never sampled. The remaining class imbalance is handled
+by the class weights in Build_model (sklearn "balanced").
 """
 import math
 import re
 import sys
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -55,9 +62,17 @@ SPLIT_NAMES = ("train", "val", "test", "heldout")
 NORMAL_BLOCKS = [("train", 0, 47), ("val", 48, 54), ("test", 55, 61), ("heldout", 62, 67)]
 WILDCARD_BLOCKS = {
     "A": [("heldout", 0, 12)],
-    "B": [("train", 0, 5), ("val", 6, 6), ("heldout", 7, 12)],
+    "B": [("train", 0, 6), ("heldout", 7, 12)],
 }
+#: Config B: the wildcard capture in this index range with the most windows
+#: (lowest index on a tie) is moved from train to val.
+WILDCARD_B_VAL_CANDIDATES = (0, 6)
 TIME_FRACTIONS = {"train": 0.70, "val": 0.15, "test": 0.15}
+
+#: Maximum train/val rows per (capture, window), by category.
+ROW_CAPS = {"default": 200, "wildcard": 1000}
+SAMPLING_SEED = 0
+SAMPLED_SPLITS = ("train", "val")
 GAP_WINDOWS = 1
 #: Categories split along their timeline instead of by whole capture.
 TIME_SPLIT_CATEGORIES = ("tunnel", zfe.OWN_BENIGN)
@@ -161,6 +176,17 @@ def _blocks_by_index(capture_id, blocks):
     raise ValueError(f"{capture_id}: index {index} is not covered by {blocks}")
 
 
+def wildcard_validation_capture(captures):
+    """capture_id of config B's wildcard validation capture (None without wildcard)."""
+    low, high = WILDCARD_B_VAL_CANDIDATES
+    wildcard = captures[captures["category"] == "wildcard"].copy()
+    if wildcard.empty:
+        return None
+    wildcard["index"] = wildcard["capture_id"].map(capture_index)
+    candidates = wildcard[wildcard["index"].between(low, high)]
+    return candidates.sort_values(["n_windows", "index"], ascending=[False, True])["capture_id"].iloc[0]
+
+
 def make_splits(captures, window_seconds=zfe.WINDOW_SECONDS):
     """Build the splits table from capture_table() output."""
     rows = []
@@ -194,6 +220,7 @@ def make_splits(captures, window_seconds=zfe.WINDOW_SECONDS):
     unknown = set(captures["category"]) - set(zfe.TRAINING_CATEGORIES) - set(zfe.EVALUATION_ONLY_CATEGORIES)
     if unknown:
         raise ValueError(f"No split rule for categories: {sorted(unknown)}")
+    wildcard_val = wildcard_validation_capture(captures)
 
     for config in CONFIGS:
         for _, capture in captures.sort_values("capture_id").iterrows():
@@ -201,6 +228,9 @@ def make_splits(captures, window_seconds=zfe.WINDOW_SECONDS):
             if category == "normal":
                 split, rule = _blocks_by_index(capture["capture_id"], NORMAL_BLOCKS)
                 add(config, capture, split, "normal " + rule)
+            elif category == "wildcard" and config == "B" and capture["capture_id"] == wildcard_val:
+                low, high = WILDCARD_B_VAL_CANDIDATES
+                add(config, capture, "val", f"wildcard config B val: most windows of file index {low:05d}-{high:05d}")
             elif category == "wildcard":
                 split, rule = _blocks_by_index(capture["capture_id"], WILDCARD_BLOCKS[config])
                 add(config, capture, split, f"wildcard config {config} " + rule)
@@ -327,36 +357,62 @@ def assign_splits(df, splits, config, window_seconds=zfe.WINDOW_SECONDS):
     return out
 
 
-def cap_rows_per_window(df, max_rows, seed=0):
-    """Keep at most `max_rows` randomly chosen rows per (capture, window).
+def sampling_keys(df, seed=SAMPLING_SEED):
+    """A reproducible random number per row.
 
-    Used on the fitting/model-selection rows only, so one busy window can't
-    dominate training; domain aggregates were computed on all rows first.
+    Each capture's rows are ordered by ts and get numbers from a generator
+    seeded with (seed, crc32(capture_id)), so a row's number doesn't depend
+    on which other captures are in the frame.
     """
-    rng = np.random.default_rng(seed)
-    order = pd.Series(rng.random(len(df)), index=df.index)
-    rank = order.groupby([df["capture_id"], df["window_id"]]).rank(method="first")
-    return df[rank <= max_rows]
+    keys = pd.Series(np.nan, index=df.index)
+    for capture_id, index in df.groupby("capture_id", sort=False).groups.items():
+        ordered = df.loc[index, "ts"].sort_values(kind="stable").index
+        rng = np.random.default_rng([seed, zlib.crc32(str(capture_id).encode("utf-8"))])
+        keys.loc[ordered] = rng.random(len(ordered))
+    return keys
 
 
-def split_counts(df, assignment, row_cap=None, seed=0):
-    """Rows and windows per split/role and class (Label).
+def row_caps_for(categories, caps=ROW_CAPS):
+    return categories.astype(str).map(lambda c: caps.get(c, caps["default"]))
 
-    With `row_cap`, also the train/val rows left after cap_rows_per_window.
+
+def cap_rows_per_window(df, caps=ROW_CAPS, seed=SAMPLING_SEED):
+    """Keep at most caps[category] (else caps["default"]) randomly chosen
+    rows per (capture, window). `df` must hold whole windows."""
+    keys = sampling_keys(df, seed)
+    rank = keys.groupby([df["capture_id"], df["window_id"]]).rank(method="first")
+    return df[rank <= row_caps_for(df["category"], caps)]
+
+
+def fit_sample_mask(df, assignment, caps=ROW_CAPS, seed=SAMPLING_SEED):
+    """True for the train/val rows kept by cap_rows_per_window.
+
+    Test and held-out rows are never sampled (they are scored in full), and
+    gap-window rows belong to no split, so both are False here.
+    """
+    keys = sampling_keys(df, seed)
+    rank = keys.groupby([df["capture_id"], df["window_id"]]).rank(method="first")
+    return assignment["split"].isin(SAMPLED_SPLITS).fillna(False).astype(bool) & (rank <= row_caps_for(df["category"], caps))
+
+
+def split_counts(df, assignment, sample=None):
+    """Rows and windows per split, role, class and category.
+
+    With `sample` (a fit_sample_mask), also the train/val rows it keeps.
     """
     frame = pd.DataFrame({
         "split": assignment["split"], "role": assignment["role"], "Label": df["Label"].astype(str),
-        "capture_id": df["capture_id"], "window_id": df["window_id"],
+        "category": df["category"].astype(str), "capture_id": df["capture_id"], "window_id": df["window_id"],
     }).dropna(subset=["split"])
-    keys = ["split", "role", "Label"]
-    counts = frame.groupby(keys).agg(rows=("capture_id", "size"))
-    counts["windows"] = frame.drop_duplicates(["split", "role", "Label", "capture_id", "window_id"]).groupby(keys).size()
-    if row_cap:
-        fitting = frame[frame["split"].isin(["train", "val"])]
-        capped = cap_rows_per_window(fitting, row_cap, seed)
-        counts[f"rows_capped_{row_cap}"] = capped.groupby(keys).size()
+    keys = ["split", "role", "Label", "category"]
+    counts = frame.groupby(keys).agg(rows=("capture_id", "size"), captures=("capture_id", "nunique"))
+    counts["windows"] = frame.drop_duplicates(keys + ["capture_id", "window_id"]).groupby(keys).size()
+    if sample is not None:
+        counts["sampled_rows"] = frame[sample.loc[frame.index]].groupby(keys).size()
     order = {name: i for i, name in enumerate(SPLIT_NAMES)}
-    return counts.reset_index().sort_values(["split", "role", "Label"], key=lambda s: s.map(order) if s.name == "split" else s)
+    counts = counts.reset_index()
+    counts["_order"] = counts["split"].map(order)
+    return counts.sort_values(["_order", "role", "Label", "category"]).drop(columns="_order")
 
 
 def main():
@@ -365,9 +421,18 @@ def main():
     splits = make_splits(capture_table(df))
     write_splits(splits)
     print(f"Wrote {SPLITS_PATH} ({len(splits)} rows)")
+    print(f"Row caps per window for train/val: {ROW_CAPS}, sampling seed {SAMPLING_SEED}")
     for config in CONFIGS:
+        assignment = assign_splits(df, splits, config)
+        counts = split_counts(df, assignment, fit_sample_mask(df, assignment))
         print(f"\nConfig {config} ({CONFIG_DESCRIPTIONS[config]})")
-        print(split_counts(df, assign_splits(df, splits, config), row_cap=200).to_string(index=False))
+        print(counts.to_string(index=False))
+        train = counts[counts["split"] == "train"]
+        benign = train.loc[train["Label"] == "benign", "sampled_rows"].sum()
+        tunnel = train.loc[train["Label"] == "tunnel", "sampled_rows"].sum()
+        wildcard = train.loc[train["category"] == "wildcard", "sampled_rows"].sum()
+        print(f"sampled train rows: benign {benign:,.0f} / tunnel {tunnel:,.0f} = {benign / tunnel:.2f}:1; "
+              f"wildcard {wildcard:,.0f} = {100 * wildcard / benign:.1f}% of benign")
 
 
 if __name__ == "__main__":

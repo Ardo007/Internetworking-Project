@@ -19,7 +19,9 @@ def captures_table():
     for i in range(68):
         add(f"normal/normal_{i:05d}_20230805150331", "normal", "normal", "benign", 30)
     for i in range(13):
-        add(f"wildcard/wildcard_{i:05d}_20231011215521", "wildcard", "wildcard", "benign", 4)
+        # 00003 has the most windows of 00000-00006; 00009 has more but is held out
+        add(f"wildcard/wildcard_{i:05d}_20231011215521", "wildcard", "wildcard", "benign",
+            {3: 9, 9: 20}.get(i, 4))
     add("tunnel/iodine-private", "tunnel", "iodine-private", "tunnel", 27)
     add("tunnel/dnscat2-mx", "tunnel", "dnscat2-mx", "tunnel", 145)
     add("unknownTunnel/dns2tcp-key", "unknownTunnel", "dns2tcp-key", "tunnel", 192)
@@ -78,9 +80,17 @@ def test_wildcard_configs(splits):
     assert set(a["split"]) == {"heldout"} and len(a) == 13
     b = splits[(splits["config"] == "B") & (splits["category"] == "wildcard")]
     by_split = b.groupby("split")["capture_id"].apply(lambda s: sorted(map(ds.capture_index, s)))
-    assert by_split["train"] == [0, 1, 2, 3, 4, 5]
-    assert by_split["val"] == [6]
+    assert by_split["train"] == [0, 1, 2, 4, 5, 6]
+    assert by_split["val"] == [3]
     assert by_split["heldout"] == list(range(7, 13))
+
+
+def test_wildcard_validation_capture_ties_go_to_the_lowest_index():
+    table = captures_table()
+    table.loc[table["category"] == "wildcard", "n_windows"] = 5
+    assert ds.wildcard_validation_capture(table) == "wildcard/wildcard_00000_20231011215521"
+    table.loc[table["capture_id"] == "wildcard/wildcard_00005_20231011215521", "n_windows"] = 6
+    assert ds.wildcard_validation_capture(table) == "wildcard/wildcard_00005_20231011215521"
 
 
 def test_tunnel_time_segments(splits):
@@ -182,6 +192,15 @@ def test_committed_splits_file():
         assert tunnel.groupby("capture_id")["split"].apply(lambda s: sorted(s) == ["test", "train", "val"]).all()
     assert set(splits.loc[splits["category"] == "tunnel", "family"]) == set(ds.TUNNEL_FAMILIES)
 
+    wildcard = splits[(splits["config"] == "B") & (splits["category"] == "wildcard")].copy()
+    wildcard["index"] = wildcard["capture_id"].map(ds.capture_index)
+    candidates = wildcard[wildcard["index"] <= 6]
+    val = candidates[candidates["split"] == "val"]
+    assert len(val) == 1
+    assert val["last_window"].iloc[0] == candidates["last_window"].max()  # most windows
+    assert set(candidates.loc[candidates["split"] != "val", "split"]) == {"train"}
+    assert set(wildcard.loc[wildcard["index"] >= 7, "split"]) == {"heldout"}
+
 
 # ------------------------------------------------------- assignment --
 
@@ -196,7 +215,7 @@ def frame_for(capture_id, category, label, n_windows, rows_per_window=3):
 
 def test_assign_splits_leaves_gap_windows_unassigned(splits):
     df = pd.concat([frame_for("tunnel/iodine-private", "tunnel", "tunnel", 27),
-                    frame_for("wildcard/wildcard_00006_20231011215521", "wildcard", "benign", 4)],
+                    frame_for("wildcard/wildcard_00003_20231011215521", "wildcard", "benign", 9)],
                    ignore_index=True)
     b = ds.assign_splits(df, splits, "B")
     tunnel = b[df["capture_id"] == "tunnel/iodine-private"]
@@ -220,9 +239,52 @@ def test_assign_splits_rejects_other_window_length(splits):
         ds.assign_splits(df, splits, "B", window_seconds=30)
 
 
-def test_cap_rows_per_window():
-    df = pd.concat([frame_for("a", "normal", "benign", 2, rows_per_window=10),
-                    frame_for("b", "normal", "benign", 1, rows_per_window=2)], ignore_index=True)
-    capped = ds.cap_rows_per_window(df, 4, seed=1)
-    assert capped.groupby(["capture_id", "window_id"]).size().tolist() == [4, 4, 2]
-    pd.testing.assert_frame_equal(capped, ds.cap_rows_per_window(df, 4, seed=1))
+CAPS = {"default": 4, "wildcard": 7}
+
+
+def sampling_frame():
+    return pd.concat([frame_for("a", "normal", "benign", 2, rows_per_window=10),
+                      frame_for("b", "normal", "benign", 1, rows_per_window=2),
+                      frame_for("w", "wildcard", "benign", 1, rows_per_window=10)], ignore_index=True)
+
+
+def test_cap_rows_per_window_uses_category_caps():
+    capped = ds.cap_rows_per_window(sampling_frame(), CAPS, seed=1)
+    assert capped.groupby(["capture_id", "window_id"]).size().tolist() == [4, 4, 2, 7]
+
+
+def test_sampling_is_reproducible_and_independent_of_other_captures():
+    df = sampling_frame()
+    first = ds.cap_rows_per_window(df, CAPS, seed=1)
+    pd.testing.assert_frame_equal(first, ds.cap_rows_per_window(df, CAPS, seed=1))
+    # the rows picked for capture "a" don't change when it is sampled on its own,
+    # or when the frame's row order changes
+    alone = ds.cap_rows_per_window(df[df["capture_id"] == "a"], CAPS, seed=1)
+    pd.testing.assert_frame_equal(alone, first[first["capture_id"] == "a"])
+    shuffled = ds.cap_rows_per_window(df.sample(frac=1, random_state=3), CAPS, seed=1)
+    assert sorted(shuffled.index) == sorted(first.index)
+    assert sorted(ds.cap_rows_per_window(df, CAPS, seed=2).index) != sorted(first.index)
+
+
+def test_fit_sample_mask_only_samples_train_and_val():
+    df = sampling_frame()
+    assignment = pd.DataFrame({"split": df["capture_id"].map({"a": "train", "b": "heldout", "w": "val"}),
+                               "role": "x"}, index=df.index)
+    assignment.loc[df["capture_id"].eq("a") & df["window_id"].eq(1), "split"] = pd.NA  # a gap window
+    mask = ds.fit_sample_mask(df, assignment, CAPS, seed=1)
+    assert mask.groupby([df["capture_id"], df["window_id"]]).sum().tolist() == [4, 0, 0, 7]
+    kept = ds.cap_rows_per_window(df, CAPS, seed=1).index
+    assert set(mask[mask].index) <= set(kept)
+
+
+def test_split_counts(splits):
+    df = pd.concat([frame_for("tunnel/iodine-private", "tunnel", "tunnel", 27),
+                    frame_for("wildcard/wildcard_00003_20231011215521", "wildcard", "benign", 9)],
+                   ignore_index=True)
+    assignment = ds.assign_splits(df, splits, "B")
+    counts = ds.split_counts(df, assignment, ds.fit_sample_mask(df, assignment, {"default": 2, "wildcard": 3}))
+    tunnel_train = counts[(counts["split"] == "train") & (counts["category"] == "tunnel")].iloc[0]
+    assert (tunnel_train["rows"], tunnel_train["windows"], tunnel_train["sampled_rows"]) == (54, 18, 36)
+    wildcard_val = counts[(counts["split"] == "val") & (counts["category"] == "wildcard")].iloc[0]
+    assert (wildcard_val["rows"], wildcard_val["windows"], wildcard_val["sampled_rows"]) == (27, 9, 27)
+    assert counts["split"].tolist()[0] == "train"

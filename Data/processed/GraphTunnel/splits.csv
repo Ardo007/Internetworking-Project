@@ -248,13 +248,13 @@ B,unknownTunnel/dns2tcp-txt,unknownTunnel,dns2tcp-txt,dns2tcp-txt,tunnel,heldout
 B,unknownTunnel/ozymandns,unknownTunnel,ozymandns,ozymandns,tunnel,heldout,unseen_tool,True,0,44,1693820700,1693823400,2023-09-04 09:45:00,2023-09-04 10:30:00,60,evaluation only
 B,unknownTunnel/tcp-over-dns-CNAME,unknownTunnel,tcp-over-dns-CNAME,tcp-over-dns-CNAME,tunnel,heldout,unseen_tool,True,0,269,1693804380,1693820580,2023-09-04 05:13:00,2023-09-04 09:43:00,60,evaluation only
 B,unknownTunnel/tcp-over-dns-TXT,unknownTunnel,tcp-over-dns-TXT,tcp-over-dns-TXT,tunnel,heldout,unseen_tool,True,0,131,1693796400,1693804320,2023-09-04 03:00:00,2023-09-04 05:12:00,60,evaluation only
-B,wildcard/wildcard_00000_20231011215521,wildcard,wildcard,wildcard,benign,train,fit,True,0,2,1697032500,1697032680,2023-10-11 13:55:00,2023-10-11 13:58:00,60,wildcard config B file index 00000-00005
-B,wildcard/wildcard_00001_20231011215715,wildcard,wildcard,wildcard,benign,train,fit,True,0,6,1697032620,1697033040,2023-10-11 13:57:00,2023-10-11 14:04:00,60,wildcard config B file index 00000-00005
-B,wildcard/wildcard_00002_20231011220330,wildcard,wildcard,wildcard,benign,train,fit,True,0,5,1697032980,1697033340,2023-10-11 14:03:00,2023-10-11 14:09:00,60,wildcard config B file index 00000-00005
-B,wildcard/wildcard_00003_20231011220812,wildcard,wildcard,wildcard,benign,train,fit,True,0,3,1697033280,1697033520,2023-10-11 14:08:00,2023-10-11 14:12:00,60,wildcard config B file index 00000-00005
-B,wildcard/wildcard_00004_20231011221109,wildcard,wildcard,wildcard,benign,train,fit,True,0,2,1697033460,1697033640,2023-10-11 14:11:00,2023-10-11 14:14:00,60,wildcard config B file index 00000-00005
-B,wildcard/wildcard_00005_20231011221350,wildcard,wildcard,wildcard,benign,train,fit,True,0,4,1697033580,1697033880,2023-10-11 14:13:00,2023-10-11 14:18:00,60,wildcard config B file index 00000-00005
-B,wildcard/wildcard_00006_20231011221701,wildcard,wildcard,wildcard,benign,val,model_selection,True,0,0,1697033820,1697033880,2023-10-11 14:17:00,2023-10-11 14:18:00,60,wildcard config B file index 00006-00006
+B,wildcard/wildcard_00000_20231011215521,wildcard,wildcard,wildcard,benign,train,fit,True,0,2,1697032500,1697032680,2023-10-11 13:55:00,2023-10-11 13:58:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00001_20231011215715,wildcard,wildcard,wildcard,benign,val,model_selection,True,0,6,1697032620,1697033040,2023-10-11 13:57:00,2023-10-11 14:04:00,60,wildcard config B val: most windows of file index 00000-00006
+B,wildcard/wildcard_00002_20231011220330,wildcard,wildcard,wildcard,benign,train,fit,True,0,5,1697032980,1697033340,2023-10-11 14:03:00,2023-10-11 14:09:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00003_20231011220812,wildcard,wildcard,wildcard,benign,train,fit,True,0,3,1697033280,1697033520,2023-10-11 14:08:00,2023-10-11 14:12:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00004_20231011221109,wildcard,wildcard,wildcard,benign,train,fit,True,0,2,1697033460,1697033640,2023-10-11 14:11:00,2023-10-11 14:14:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00005_20231011221350,wildcard,wildcard,wildcard,benign,train,fit,True,0,4,1697033580,1697033880,2023-10-11 14:13:00,2023-10-11 14:18:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00006_20231011221701,wildcard,wildcard,wildcard,benign,train,fit,True,0,0,1697033820,1697033880,2023-10-11 14:17:00,2023-10-11 14:18:00,60,wildcard config B file index 00000-00006
 B,wildcard/wildcard_00007_20231011221737,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,5,1697033820,1697034180,2023-10-11 14:17:00,2023-10-11 14:23:00,60,wildcard config B file index 00007-00012
 B,wildcard/wildcard_00008_20231011222232,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,6,1697034120,1697034540,2023-10-11 14:22:00,2023-10-11 14:29:00,60,wildcard config B file index 00007-00012
 B,wildcard/wildcard_00009_20231011222825,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,1,1697034480,1697034600,2023-10-11 14:28:00,2023-10-11 14:30:00,60,wildcard config B file index 00007-00012
