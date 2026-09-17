@@ -6,11 +6,24 @@ PCAP corpus (the same source referred to as "GraphTunnel" elsewhere in this repo
 
 ## Setup
 
+TensorFlow 2.21 supports Python 3.13 but not 3.14, so the project uses
+Python 3.13 in a virtual environment at the repo root. On Windows, install it
+with the [Python Install Manager](https://docs.python.org/3/using/windows.html),
+then run these from the repo root:
+
 ```text
-python -m venv .venv
+py install 3.13
+py -V:3.13 -m venv .venv
 .venv\Scripts\activate        # or source .venv/bin/activate on Linux/Mac
-pip install -r notebooks/requirements.txt
+python -m pip install -r notebooks/requirements.txt
 ```
+
+Open the notebook in VS Code or Jupyter and select the `.venv` interpreter
+(Python 3.13) as the kernel. Run the tests from the repo root with
+`.\.venv\Scripts\python.exe -m pytest`.
+
+VS Code's Pylance may underline `tensorflow.keras` imports. That is an editor
+warning only; the imports resolve to Keras 3 at runtime.
 
 Then open `dns_tunneling_bilstm_model.ipynb` and run top to bottom. Part 1 will
 auto-clone the ~845MB PCAP dataset on first run (skipped if `dataset/*.csv`
