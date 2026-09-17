@@ -471,8 +471,11 @@ def to_ml_frame(df, label_col="Label", extra_cols=(), features=FEATURE_COLUMNS):
     """Select the model columns and fill response fields that are missing
     when a query got no (answered) response. `features` picks a feature set
     (see FEATURE_SETS); `extra_cols` keeps bookkeeping columns (e.g.
-    capture_id, window_id) for splitting and analysis."""
-    cols = list(features) + [c for c in extra_cols if c not in features] + [label_col]
+    capture_id, window_id) for splitting and analysis. label_col=None
+    leaves the label out (live data has none)."""
+    cols = list(features) + [c for c in extra_cols if c not in features]
+    if label_col is not None:
+        cols.append(label_col)
     out = df[cols].copy()
     for column, value in _MISSING_RESPONSE_VALUES.items():
         if column in out:
