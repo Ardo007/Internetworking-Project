@@ -168,3 +168,32 @@ is responses whose query is not in the capture). Distinct timestamps went from
 0.2% to 98% of records, every `ts` is now a real packet time, and `rtt` is
 present on 89% of records (99% of answered ones), against 0.1% before. The
 wildcard logs came out identical.
+
+## Splits
+
+`notebooks/dataset_splits.py` is the project's only split rule (the old
+row-level `testAndEval/TestingAndEval/split_dataset.py` was removed). Run it
+after the Zeek logs are in place:
+
+```text
+python notebooks/dataset_splits.py
+```
+
+It builds the feature table with `zeek_feature_extraction`, writes
+`Data/processed/GraphTunnel/splits.csv` (committed) and prints row and window
+counts per class, split and configuration. Each row of `splits.csv` assigns a
+whole capture, or one contiguous range of 60-second windows of a capture, to
+`train`, `val`, `test` or `heldout` in configuration `A` or `B`:
+
+| category | rule |
+|---|---|
+| normal | file index 00000-00047 train, 00048-00054 val, 00055-00061 test, 00062-00067 held out (false positive rate) |
+| tunnel | per capture, first ~70% of its windows train, next ~15% val, last ~15% test, one unused window between segments |
+| wildcard | config B (primary): 00000-00005 train, 00006 val, 00007-00012 held out. Config A (stress test): all held out |
+| unknownTunnel | held out (unseen tools) |
+| crossEndPoint | held out (unseen platform: iodine on Android) |
+| own_benign | live-pipeline sessions from `datas/zeek/<chunk>/`: most recent complete session held out, earlier sessions split 70/15/15 by contiguous time blocks |
+
+`own_benign` captures are found by `zeek_feature_extraction.find_live_sessions`:
+consecutive 30-second chunks of one `capture_live.py` run form one capture, and
+a session only counts once it has finished. None exist yet.

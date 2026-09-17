@@ -1,4 +1,11 @@
-Data
+# Data/ holds PCAPs, Zeek logs and derived files. Only the split
+# definition is committed.
+/Data/*
+!/Data/processed/
+/Data/processed/*
+!/Data/processed/GraphTunnel/
+/Data/processed/GraphTunnel/*
+!/Data/processed/GraphTunnel/splits.csv
 datas
 
 # --- notebooks/ (DNS tunnelling ML model) ---
