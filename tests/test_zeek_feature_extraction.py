@@ -1,5 +1,7 @@
+import json
 import math
 import struct
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -50,13 +52,15 @@ def test_load_dns_log_rejects_json_that_is_not_a_record(tmp_path):
 # ------------------------------------------------------ field mapping --
 
 def test_bookkeeping_columns(capture):
-    assert len(capture) == 10  # 11 records, one split pair merged
-    assert capture.attrs == {"malformed_lines": 1, "rejoined": 1}
+    # 11 records: one split pair merged, two unmatched responses dropped
+    assert len(capture) == 8
+    assert capture.attrs == {"malformed_lines": 1, "rejoined": 1, "unmatched_responses_dropped": 2}
     assert set(capture["capture_id"]) == {"tunnel/sample"}
     assert set(capture["category"]) == {"tunnel"}
     assert set(capture["tool"]) == {"sample-tool"}
     assert set(capture["Label"]) == {"tunnel"}
     assert capture["ts"].is_monotonic_increasing
+    assert set(zfe.BOOKKEEPING_COLUMNS) <= set(capture.columns)
 
 
 def test_answered_a_query(capture):
@@ -95,13 +99,23 @@ def test_query_without_response(capture):
 def test_to_ml_frame_fills_missing_response_fields(capture):
     ml = zfe.to_ml_frame(zfe.add_domain_aggregates(capture), extra_cols=["uid"])
     r = ml[ml["uid"] == "CNoResponse"].iloc[0]
-    assert (r["response_ancount"], r["response_min_ttl"], r["response_rcode"], r["response_latency"]) == (0, -1, -1, -1)
+    assert (r["response_ancount"], r["response_min_ttl"], r["response_rcode"]) == (0, -1, -1)
     assert list(ml.columns) == zfe.FEATURE_COLUMNS + ["uid", "Label"]
     assert not ml[zfe.FEATURE_COLUMNS].isna().any().any()
 
 
+def test_to_ml_frame_feature_subset(aggregated):
+    ml = zfe.to_ml_frame(aggregated, features=zfe.FEATURE_SETS["lexical_only"],
+                         extra_cols=["capture_id", "response_latency"])
+    assert list(ml.columns) == zfe.FEATURE_GROUPS["lexical"] + ["capture_id", "response_latency", "Label"]
+    assert ml.loc[row(aggregated, "CNoResponse").name, "response_latency"] == -1
+
+
 @pytest.mark.parametrize("record, expected", [
     ({"qtype": 16, "qtype_name": "TXT"}, "TXT"),
+    ({"qtype": 65, "qtype_name": "HTTPS"}, "HTTPS"),
+    ({"qtype": 64, "qtype_name": "SVCB"}, "SVCB"),
+    ({"qtype": 65}, "HTTPS"),
     ({"qtype": 25, "qtype_name": "KEY"}, "OTHER"),
     ({"qtype": 65399, "qtype_name": "query-65399"}, "OTHER"),
     ({"qtype": 255, "qtype_name": "*"}, "ANY"),
@@ -111,6 +125,8 @@ def test_qtype_name_vocabulary(record, expected):
     assert zfe.qtype_name_of(record) == expected
 
 
+# ------------------------------------------------------ feature columns --
+
 def test_identifiers_are_never_features():
     identifiers = {"uid", "qname", "query", "trans_id", "capture_id", "tool", "category",
                    "id.orig_h", "id.orig_p", "id.resp_h", "id.resp_p", "ts", "base_domain",
@@ -118,6 +134,26 @@ def test_identifiers_are_never_features():
     assert not identifiers & set(zfe.FEATURE_COLUMNS)
     assert not set(zfe.BOOKKEEPING_COLUMNS) & set(zfe.FEATURE_COLUMNS)
     assert "response_size" not in zfe.FEATURE_COLUMNS
+    assert "response_latency" not in zfe.FEATURE_COLUMNS
+
+
+def test_feature_groups_partition_the_features():
+    partition = [c for name, group in zfe.FEATURE_GROUPS.items() if name != "artefact_suspect" for c in group]
+    assert sorted(partition) == sorted(zfe.FEATURE_COLUMNS)
+    assert len(partition) == len(set(partition))
+    assert set(zfe.FEATURE_GROUPS["artefact_suspect"]) == {"domain_qtype_diversity", "no_response_ratio"}
+    assert "domain_qtype_diversity" in zfe.FEATURE_GROUPS["domain_shape"]
+    assert "qtype_name" in zfe.FEATURE_GROUPS["lexical"]
+
+
+def test_feature_sets():
+    sets = zfe.FEATURE_SETS
+    assert sets["all"] == zfe.FEATURE_COLUMNS
+    assert sets["lexical_only"] == zfe.FEATURE_GROUPS["lexical"]
+    assert set(sets["domain_volume_shape"]) == set(zfe.FEATURE_GROUPS["domain_volume"] + zfe.FEATURE_GROUPS["domain_shape"])
+    assert set(sets["all_minus_artefact_suspect"]) == set(zfe.FEATURE_COLUMNS) - {"domain_qtype_diversity", "no_response_ratio"}
+    for features in sets.values():
+        assert set(features) <= set(zfe.FEATURE_COLUMNS)
 
 
 # ------------------------------------------------------ escape decoding --
@@ -156,8 +192,8 @@ def test_decoding_matches_the_pcap_parser():
 
 # -------------------------------------------------- split transactions --
 
-def record(ts, *, trans_id=1, port=5000, query="q.example.com", kind="query", **extra):
-    base = {"ts": ts, "uid": f"C{kind}{ts}", "id.orig_h": "10.0.0.2", "id.orig_p": port,
+def record(ts, *, trans_id=1, port=5000, query="q.example.com", kind="query", uid=None, **extra):
+    base = {"ts": ts, "uid": uid or f"C{kind}{ts}", "id.orig_h": "10.0.0.2", "id.orig_p": port,
             "id.resp_h": "10.0.0.1", "id.resp_p": 53, "proto": "udp", "trans_id": trans_id}
     if query is not None:
         base["query"] = query
@@ -184,12 +220,11 @@ def test_split_pair_in_fixture_is_merged(capture):
 
 
 def test_fixture_pairs_that_must_not_merge(capture):
-    # 31 s apart
+    # 31 s apart / different trans_id: the queries stay unanswered and the
+    # responses, having no query in the data, are dropped.
     assert math.isnan(row(capture, "CLateQuery")["response_rcode"])
-    assert row(capture, "CLateResponse")["response_rcode"] == 0
-    # different trans_id
     assert math.isnan(row(capture, "CMismatchQuery")["response_rcode"])
-    assert row(capture, "CMismatchResponse")["response_rcode"] == 0
+    assert not {"CLateResponse", "CMismatchResponse"} & set(capture["uid"])
 
 
 def test_rejoin_merges_response_fields():
@@ -262,6 +297,16 @@ def test_rejoin_pairs_in_time_order():
     assert [(r["ts"], r["rcode"]) for r in out] == [(100.0, 0), (104.0, 2)]
 
 
+def test_unmatched_responses_are_dropped_after_the_join():
+    records = [record(100.0), record(101.0, kind="response"),        # merged
+               record(200.0, trans_id=2, kind="response"),            # no query
+               record(300.0, trans_id=3, kind="paired"),              # paired by Zeek, kept
+               record(400.0, trans_id=4)]                             # no response, kept
+    out, stats = zfe.prepare_records(records)
+    assert stats == {"rejoined": 1, "unmatched_responses_dropped": 1}
+    assert [r["ts"] for r in out] == [100.0, 300.0, 400.0]
+
+
 # ---------------------------------------------------- window assignment --
 
 def test_window_assignment():
@@ -278,24 +323,25 @@ def test_window_assignment():
 def test_fixture_windows(capture):
     assert capture.loc[capture["uid"] == "CNormalB", "window_id"].tolist() == [1]
     assert (capture.loc[capture["uid"] != "CNormalB", "window_id"] == 0).all()
-    assert capture.loc[capture["window_id"] == 0, "window_query_count"].unique().tolist() == [9]
+    assert capture.loc[capture["window_id"] == 0, "window_query_count"].unique().tolist() == [7]
     assert capture.loc[capture["window_id"] == 1, "window_query_count"].unique().tolist() == [1]
 
 
 # ---------------------------------------------------- domain aggregates --
 
 def test_domain_aggregates_per_window(aggregated):
-    r = row(aggregated, "CNormalA")  # example.com, window 0: 8 records
-    assert r["domain_query_count"] == 8
+    # example.com, window 0: www, nosuch, lost, split, late, mismatch
+    r = row(aggregated, "CNormalA")
+    assert r["domain_query_count"] == 6
     assert r["domain_unique_qnames"] == 6
-    assert r["domain_unique_subdomain_ratio"] == pytest.approx(0.75)
-    assert r["domain_qtype_diversity"] == 4  # A, AAAA, TXT, OTHER
-    assert r["domain_avg_qname_len"] == pytest.approx(138 / 8)
-    assert r["domain_std_qname_len"] == pytest.approx(np.std([15, 18, 16, 17, 16, 20, 20, 16], ddof=1))
-    assert r["domain_txt_ratio"] == pytest.approx(1 / 8)
+    assert r["domain_unique_subdomain_ratio"] == 1.0
+    assert r["domain_qtype_diversity"] == 3  # A, AAAA, TXT
+    assert r["domain_avg_qname_len"] == pytest.approx(102 / 6)
+    assert r["domain_std_qname_len"] == pytest.approx(np.std([15, 18, 16, 17, 16, 20], ddof=1))
+    assert r["domain_txt_ratio"] == pytest.approx(1 / 6)
     assert r["domain_null_ratio"] == 0
-    assert r["domain_duration"] == pytest.approx(40.5)
-    assert r["domain_query_rate"] == pytest.approx(8 / 40.5)
+    assert r["domain_duration"] == pytest.approx(11.5)
+    assert r["domain_query_rate"] == pytest.approx(6 / 11.5)
 
     # the same domain in the next window is aggregated on its own
     later = row(aggregated, "CNormalB")
@@ -307,11 +353,11 @@ def test_domain_aggregates_per_window(aggregated):
 
 def test_new_per_domain_ratios(aggregated):
     r = row(aggregated, "CNormalA")
-    assert r["nxdomain_ratio"] == pytest.approx(1 / 8)
-    assert r["no_response_ratio"] == pytest.approx(3 / 8)  # lost, late query, mismatch query
-    assert r["rejected_ratio"] == pytest.approx(1 / 8)
-    # rcodes of the answered records: 0, 3, 0, 0, 0
-    assert r["rcode_entropy"] == pytest.approx(-(0.8 * math.log2(0.8) + 0.2 * math.log2(0.2)))
+    assert r["nxdomain_ratio"] == pytest.approx(1 / 6)
+    assert r["no_response_ratio"] == pytest.approx(3 / 6)  # lost, late query, mismatch query
+    assert r["rejected_ratio"] == pytest.approx(1 / 6)
+    # rcodes of the answered records: 0 (www), 3 (nosuch), 0 (split)
+    assert r["rcode_entropy"] == pytest.approx(-(2 / 3 * math.log2(2 / 3) + 1 / 3 * math.log2(1 / 3)))
 
     tunnel = row(aggregated, "CTunnelTxt")  # example.net, window 0: 1 record
     assert tunnel["domain_query_count"] == 1
@@ -330,7 +376,8 @@ def test_rcode_entropy_is_zero_without_responses():
 
 def test_aggregates_keep_every_row(capture, aggregated):
     assert len(aggregated) == len(capture)
-    assert not aggregated[[c for c in zfe.FEATURE_COLUMNS if c.startswith("domain_") or c.endswith(("_ratio", "_entropy"))]].isna().any().any()
+    aggregate_columns = [c for c in zfe.FEATURE_COLUMNS if c.startswith("domain_") or c.endswith(("_ratio", "_entropy"))]
+    assert not aggregated[aggregate_columns].isna().any().any()
 
 
 # ------------------------------------------------------ manifest checks --
@@ -342,6 +389,7 @@ def manifest_row(category, tool):
 
 def test_tool_categories_ok():
     zfe.check_tool_categories([manifest_row("tunnel", "iodine-txt"), manifest_row("normal", "normal"),
+                               manifest_row("own_benign", "own_benign"),
                                manifest_row("unknownTunnel", "dns2tcp-key"),
                                manifest_row("crossEndPoint", "AndIodine-TXT")])
 
@@ -369,10 +417,11 @@ def test_build_dataset_from_manifest(tmp_path):
     rows = [{"capture_id": "tunnel/sample", "category": "tunnel", "tool": "sample", "label": "1",
              "zeek_dns_log": str(folder / "dns.log")}]
     df = zfe.build_dataset_from_manifest(rows, verbose=False)
-    assert len(df) == 10
+    assert len(df) == 8
     assert set(zfe.FEATURE_COLUMNS) <= set(df.columns)
-    assert df.attrs["capture_stats"] == [{"capture_id": "tunnel/sample", "category": "tunnel", "records": 10,
-                                          "malformed_lines": 1, "rejoined": 1}]
+    assert df.attrs["capture_stats"] == [{"capture_id": "tunnel/sample", "category": "tunnel", "records": 8,
+                                          "malformed_lines": 1, "rejoined": 1,
+                                          "unmatched_responses_dropped": 2}]
 
 
 def test_build_dataset_refuses_backup_folders(tmp_path):
@@ -383,3 +432,84 @@ def test_build_dataset_refuses_backup_folders(tmp_path):
              "zeek_dns_log": str(folder / "dns.log")}]
     with pytest.raises(ValueError, match="_Backup"):
         zfe.build_dataset_from_manifest(rows, verbose=False)
+
+
+# ------------------------------------------------ live chunk folders --
+
+def chunk_name(index, started):
+    return f"capture_{index:05d}_{started:%Y%m%d%H%M%S}"
+
+
+def write_chunk(zeek_dir, index, started, records):
+    folder = zeek_dir / chunk_name(index, started)
+    folder.mkdir(parents=True)
+    if records is not None:
+        (folder / "dns.log").write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
+    else:
+        (folder / "conn.log").write_text("{}\n", encoding="utf-8")  # a chunk without DNS traffic
+    return folder
+
+
+@pytest.fixture
+def live_dir(tmp_path):
+    """Two capture_live.py sessions of 30 s chunks.
+
+    Session 1: chunks 1-3; a transaction straddles chunks 1 and 2 and
+    chunk 3 has no DNS traffic. Session 2 restarts at index 1 an hour later.
+    """
+    zeek_dir = tmp_path / "datas" / "zeek"
+    t0 = datetime(2026, 9, 18, 10, 0, 0)
+    base = t0.timestamp()
+    write_chunk(zeek_dir, 1, t0, [record(base + 5, trans_id=1, uid="Ca"),
+                                   record(base + 29, trans_id=2, query="x.tunnel.test", uid="Cq")])
+    write_chunk(zeek_dir, 2, t0.replace(second=30), [
+        record(base + 31, trans_id=2, query="x.tunnel.test", kind="response", uid="Cr",
+               answers=["TXT 1 a"], TTLs=[0.0]),
+        record(base + 45, trans_id=3, query="y.tunnel.test", uid="Cb")])
+    write_chunk(zeek_dir, 3, t0.replace(minute=1), None)
+    later = t0.replace(hour=11)
+    write_chunk(zeek_dir, 1, later, [record(later.timestamp() + 1, trans_id=9, uid="Cc")])
+    write_chunk(zeek_dir, 2, later.replace(second=30), [record(later.timestamp() + 31, trans_id=10, uid="Cd")])
+    (zeek_dir / (chunk_name(3, later.replace(minute=1)) + "_Backup")).mkdir()
+    return zeek_dir, base, later.timestamp()
+
+
+def test_find_live_sessions(live_dir):
+    zeek_dir, first_start, second_start = live_dir
+    sessions = zfe.find_live_sessions(zeek_dir, now=second_start + 45)
+    assert [s["session_id"] for s in sessions] == [
+        "capture_00001_20260918100000", "capture_00001_20260918110000"]
+    first, second = sessions
+    assert first["chunks"] == ["capture_00001_20260918100000", "capture_00002_20260918100030",
+                               "capture_00003_20260918100100"]
+    assert [p.parent.name for p in first["dns_logs"]] == first["chunks"][:2]
+    assert first["start"] == first_start
+    assert first["complete"]          # a later session exists
+    assert not second["complete"]     # last chunk started 15 s before `now`
+    assert zfe.find_live_sessions(zeek_dir, now=second_start + 3600)[1]["complete"]
+
+
+def test_missing_chunk_index_starts_a_new_session(tmp_path):
+    t0 = datetime(2026, 9, 18, 10, 0, 0)
+    for index, second in [(1, 0), (2, 30), (4, 30)]:
+        write_chunk(tmp_path, index, t0.replace(minute=index // 2, second=second), [record(t0.timestamp() + index)])
+    sessions = zfe.find_live_sessions(tmp_path, now=t0.timestamp())
+    assert [len(s["chunks"]) for s in sessions] == [2, 1]
+
+
+def test_live_session_is_one_capture_across_chunks(live_dir):
+    zeek_dir, base, second_start = live_dir
+    rows = zfe.own_benign_manifest_rows(zeek_dir, now=second_start + 45)
+    assert [r["capture_id"] for r in rows] == ["own_benign/capture_00001_20260918100000"]  # complete only
+    assert rows[0]["category"] == "own_benign" and rows[0]["label"] == "0"
+    assert len(zfe.own_benign_manifest_rows(zeek_dir, include_incomplete=True, now=second_start + 45)) == 2
+
+    df = zfe.build_dataset_from_manifest(rows, verbose=False)
+    assert df.attrs["capture_stats"][0]["rejoined"] == 1   # query in chunk 1, response in chunk 2
+    assert df["uid"].tolist() == ["Ca", "Cq", "Cb"]
+    assert set(df["Label"]) == {"benign"}
+    # windows follow the clock, not the 30 s chunks
+    assert df["window_start"].tolist() == [math.floor(base / 60) * 60] * 3
+    tunnel_domain = df[df["base_domain"] == "tunnel.test"]
+    assert tunnel_domain["domain_query_count"].tolist() == [2, 2]
+    assert row(df, "Cq")["response_latency"] == pytest.approx(2.0)

@@ -8,13 +8,15 @@ base-domain rule are imported from ``dns_feature_extraction`` so both paths
 compute them identically.
 
 Pipeline, per capture:
-  1. load_dns_log             read the JSON lines; skip and count malformed ones
-  2. join_split_transactions  merge a query Zeek logged without its response
-                              with the response it logged separately
-  3. records_to_frame         one row per record: lexical and response
-                              features plus bookkeeping columns
-  4. assign_windows           window_id = WINDOW_SECONDS time window
-  5. add_domain_aggregates    per (capture_id, window_id, base_domain)
+  1. load_dns_logs              read the JSON lines of one dns.log, or of
+                                several consecutive live chunks; skip and
+                                count malformed lines
+  2. prepare_records            join_split_transactions, then
+                                drop_unmatched_responses
+  3. records_to_frame           one row per record: lexical and response
+                                features plus bookkeeping columns
+  4. assign_windows             window_id = WINDOW_SECONDS time window
+  5. add_domain_aggregates      per (capture_id, window_id, base_domain)
 
 Every model feature (FEATURE_COLUMNS) is computed from dns.log alone.
 conn.log is not used: its resp_bytes is per connection, and a single UDP
@@ -31,19 +33,27 @@ can't pair them: it gives up on a connection once 50 transaction IDs are
 waiting for an answer (DNS::max_pending_query_ids), it times a DNS
 connection out after 10 s without packets (dns_session_timeout), and a
 transaction can be cut in two by a capture boundary. join_split_transactions
-merges a query-only
-record (no rcode) with the earliest response-only record (an rcode but no
-qtype, since Zeek only takes qtype from the request) that has the same
-protocol, addresses, ports and trans_id, the same query when the response has
-one, and arrives at most REJOIN_MAX_GAP_SECONDS after the query.
+merges a query-only record (no rcode) with the earliest response-only record
+(an rcode but no qtype, since Zeek only takes qtype from the request) that
+has the same protocol, addresses, ports and trans_id, the same query when the
+response has one, and arrives at most REJOIN_MAX_GAP_SECONDS after the query.
+
+Unmatched responses. A response-only record still left after the join is a
+response whose query isn't in the data (it was sent before the capture
+started, or its record is missing). Zeek doesn't know its qtype and takes
+its query name from the answer section, so drop_unmatched_responses removes
+it before rows and domain aggregates are built.
 
 Live scoring. run_zeek.py writes one Zeek folder per 30-second capture chunk
 (datas/zeek/<chunk>/). Live scoring must join consecutive 30 s chunks into
-windows of WINDOW_SECONDS before computing domain aggregates: concatenate the
-dns.log records of consecutive chunks, run join_split_transactions over the
-concatenation (a transaction can straddle two chunks), then assign windows
-and compute the aggregates. Aggregates computed on one 30 s chunk on its own
-would not match what the model was trained on.
+windows of WINDOW_SECONDS before computing domain aggregates: load the
+dns.log files of consecutive chunks together (load_dns_logs accepts a list),
+run prepare_records over the concatenation (a transaction can straddle two
+chunks), then assign windows and compute the aggregates. Aggregates computed
+on one 30 s chunk on its own would not match what the model was trained on.
+find_live_sessions groups chunk folders into capture sessions, and
+own_benign_manifest_rows turns them into manifest rows for the "own_benign"
+category.
 
 Query decoding. Zeek writes every byte of a DNS name that isn't printable
 ASCII as ``\\xNN``. decode_query turns those escapes back into single latin-1
@@ -56,8 +66,10 @@ import csv
 import json
 import math
 import re
+import time
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -67,6 +79,7 @@ from dns_feature_extraction import DNS_QTYPES, _base_domain, _lexical_features
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = PROJECT_ROOT / "Data" / "processed" / "GraphTunnel" / "capture_manifest.csv"
+LIVE_ZEEK_DIR = PROJECT_ROOT / "datas" / "zeek"
 
 #: Length of the time window the domain aggregates are computed over. Two
 #: live-capture chunks; the shortest GraphTunnel tunnel capture (1,577 s)
@@ -77,16 +90,26 @@ WINDOW_SECONDS = 60
 #: is merged with.
 REJOIN_MAX_GAP_SECONDS = 30
 
-LABEL_NAMES = {0: "benign", 1: "tunnel"}
-TRAINING_CATEGORIES = ("normal", "tunnel", "wildcard")
-EVALUATION_ONLY_CATEGORIES = ("unknownTunnel", "crossEndPoint")
+#: qtype categories: DNS_QTYPES plus the service-binding types, which modern
+#: clients ask for alongside A/AAAA. Everything else is "OTHER".
+QTYPE_NAMES = {**DNS_QTYPES, 64: "SVCB", 65: "HTTPS"}
 
-_QTYPE_NAMES = set(DNS_QTYPES.values())
+LABEL_NAMES = {0: "benign", 1: "tunnel"}
+#: "own_benign" is benign traffic from the live pipeline (datas/zeek).
+TRAINING_CATEGORIES = ("normal", "tunnel", "wildcard", "own_benign")
+EVALUATION_ONLY_CATEGORIES = ("unknownTunnel", "crossEndPoint")
+OWN_BENIGN = "own_benign"
+
+_QTYPE_NAME_SET = set(QTYPE_NAMES.values())
 _ZEEK_ESCAPE = re.compile(rb"\\x([0-9a-fA-F]{2})")
 _REQUIRED_FIELDS = ("ts", "uid", "id.orig_h", "id.orig_p", "id.resp_h", "id.resp_p", "proto")
 
 # Copied from the response half when a split transaction is merged.
 _RESPONSE_FIELDS = ("rcode", "rcode_name", "AA", "TC", "RA", "Z", "answers", "TTLs", "rejected")
+
+# dumpcap ring-buffer chunk names, as in Ardashes_scripts/run_zeek.py:
+# <prefix>_<00001>_<YYYYmmddHHMMSS>
+_CHUNK_NAME = re.compile(r"^(?P<prefix>.+)_(?P<index>\d{5})_(?P<timestamp>\d{14})$")
 
 # -------------------------------------------------------------- loading --
 
@@ -115,6 +138,20 @@ def load_dns_log(path):
     return records, malformed
 
 
+def load_dns_logs(paths):
+    """load_dns_log for one path or a list of paths (consecutive live
+    chunks), concatenated in the order given."""
+    if isinstance(paths, (str, Path)):
+        paths = [paths]
+    records = []
+    malformed = 0
+    for path in paths:
+        chunk_records, chunk_malformed = load_dns_log(path)
+        records.extend(chunk_records)
+        malformed += chunk_malformed
+    return records, malformed
+
+
 def decode_query(query):
     """Zeek `query` string -> the name the PCAP parser produces.
 
@@ -131,12 +168,12 @@ def decode_query(query):
 
 
 def qtype_name_of(record):
-    """qtype_name restricted to the DNS_QTYPES vocabulary, else "OTHER"."""
+    """qtype_name restricted to the QTYPE_NAMES vocabulary, else "OTHER"."""
     name = record.get("qtype_name")
-    if name in _QTYPE_NAMES:
+    if name in _QTYPE_NAME_SET:
         return name
-    # Zeek names a few types differently from DNS_QTYPES (e.g. 255 is "*").
-    return DNS_QTYPES.get(record.get("qtype"), "OTHER")
+    # Zeek names a few types differently (e.g. 255 is "*").
+    return QTYPE_NAMES.get(record.get("qtype"), "OTHER")
 
 
 # ------------------------------------------------ split transactions --
@@ -213,10 +250,34 @@ def join_split_transactions(records, max_gap=REJOIN_MAX_GAP_SECONDS):
     return out, len(merged)
 
 
+def drop_unmatched_responses(records):
+    """Remove response-only records (rcode but no qtype).
+
+    Run after join_split_transactions: what is left is a response whose
+    query isn't in the data. Returns (records, number removed).
+    """
+    kept = [r for r in records if not _is_response_only(r)]
+    return kept, len(records) - len(kept)
+
+
+def prepare_records(records, max_gap=REJOIN_MAX_GAP_SECONDS):
+    """join_split_transactions + drop_unmatched_responses.
+
+    Returns (records sorted by ts, {"rejoined": n, "unmatched_responses_dropped": m}).
+    """
+    records, rejoined = join_split_transactions(records, max_gap)
+    records, dropped = drop_unmatched_responses(records)
+    return records, {"rejoined": rejoined, "unmatched_responses_dropped": dropped}
+
+
 # ----------------------------------------------------- record -> row --
 
 def records_to_frame(records):
-    """One row per Zeek DNS record: features and per-record bookkeeping."""
+    """One row per Zeek DNS record: features and per-record bookkeeping.
+
+    response_latency (Zeek's rtt) is kept for analysis but isn't a model
+    feature: it measures the resolver and network the traffic went through.
+    """
     qnames = [decode_query(r.get("query")) for r in records]
     lexical_cache = {}
     lexical = []
@@ -238,8 +299,8 @@ def records_to_frame(records):
         "response_min_ttl": np.array([min(r["TTLs"]) if r.get("TTLs") else nan for r in records], dtype="float64"),
         "response_rcode": np.array([r.get("rcode", nan) for r in records], dtype="float64"),
         "response_latency": np.array([r.get("rtt", nan) for r in records], dtype="float64"),
-        "rejected": np.array([bool(r.get("rejected", False)) for r in records]),
-        "rejoined": np.array([bool(r.get("rejoined", False)) for r in records]),
+        "rejected": np.array([bool(r.get("rejected", False)) for r in records], dtype=bool),
+        "rejoined": np.array([bool(r.get("rejoined", False)) for r in records], dtype=bool),
     })
     lexical_frame = pd.DataFrame.from_records(lexical, columns=list(_lexical_features("")))
     return pd.concat([frame, lexical_frame], axis=1)
@@ -263,23 +324,25 @@ def assign_windows(df, window_seconds=WINDOW_SECONDS, group_col="capture_id"):
 
 def extract_query_records_from_zeek(dns_log_path, capture_id, category, tool, label,
                                     window_seconds=WINDOW_SECONDS):
-    """Parse one capture's dns.log into a per-record DataFrame.
+    """Parse one capture into a per-record DataFrame.
 
-    One row per record left after join_split_transactions, with lexical and
-    response features, window assignment and bookkeeping columns
-    (ts, capture_id, category, tool, base_domain, ...). Domain aggregates
-    are added by add_domain_aggregates. ``df.attrs`` holds the number of
-    malformed lines skipped and of split transactions merged.
+    `dns_log_path` is one dns.log, or a list of dns.log files from
+    consecutive live chunks, which are treated as one capture. One row per
+    record left after prepare_records, with lexical and response features,
+    window assignment and bookkeeping columns (ts, capture_id, category,
+    tool, base_domain, ...). Domain aggregates are added by
+    add_domain_aggregates. ``df.attrs`` holds the number of malformed lines
+    skipped, split transactions merged and unmatched responses dropped.
     """
-    records, malformed = load_dns_log(dns_log_path)
-    records, rejoined = join_split_transactions(records)
+    records, malformed = load_dns_logs(dns_log_path)
+    records, stats = prepare_records(records)
     frame = records_to_frame(records)
     frame.insert(1, "capture_id", capture_id)
     frame.insert(2, "category", category)
     frame.insert(3, "tool", tool)
     frame["Label"] = LABEL_NAMES[int(label)] if str(label).isdigit() else label
     frame = assign_windows(frame, window_seconds)
-    frame.attrs.update(malformed_lines=malformed, rejoined=rejoined)
+    frame.attrs.update(malformed_lines=malformed, **stats)
     return frame
 
 
@@ -347,37 +410,73 @@ def add_domain_aggregates(df, group_cols=DOMAIN_KEYS):
 
 # ------------------------------------------------------------ ML frame --
 
+#: Model features by group, for ablation runs. Together the groups other
+#: than "artefact_suspect" list every model feature exactly once.
+FEATURE_GROUPS = {
+    "transport": ["proto"],
+    "lexical": [
+        "qname_len", "label_count", "max_label_len", "avg_label_len", "first_label_len",
+        "digit_ratio", "hex_ratio", "unique_char_ratio", "entropy", "first_label_entropy",
+        "qtype_name",
+    ],
+    "response": ["response_ancount", "response_min_ttl", "response_rcode"],
+    "domain_volume": [
+        "domain_query_count", "domain_unique_qnames", "domain_query_rate",
+        "domain_duration", "domain_unique_subdomain_ratio",
+    ],
+    "domain_shape": [
+        "domain_avg_qname_len", "domain_std_qname_len", "domain_avg_entropy",
+        "domain_txt_ratio", "domain_null_ratio", "domain_qtype_diversity",
+    ],
+    "blackhole": ["nxdomain_ratio", "no_response_ratio", "rejected_ratio", "rcode_entropy"],
+    # Artefact-suspect: features whose GraphTunnel separation looks like a
+    # property of how the captures were recorded rather than of tunnelling.
+    # domain_qtype_diversity: the normal crawl asked only for A records while
+    # the wildcard traffic asked for A and AAAA. no_response_ratio: the
+    # wildcard capture left ~37% of queries unanswered, normal ~0%.
+    "artefact_suspect": ["domain_qtype_diversity", "no_response_ratio"],
+}
+
 #: Columns handed to the model. Identifiers (IPs, ports, query, uid,
 #: trans_id, capture_id, tool) are deliberately excluded so the model can't
-#: memorise a host, session or domain string.
-FEATURE_COLUMNS = [
-    "proto", "qtype_name",
-    "qname_len", "label_count", "max_label_len", "avg_label_len", "first_label_len",
-    "digit_ratio", "hex_ratio", "unique_char_ratio", "entropy", "first_label_entropy",
-    "response_ancount", "response_min_ttl", "response_rcode", "response_latency",
-    "domain_query_count", "domain_unique_qnames", "domain_qtype_diversity",
-    "domain_avg_qname_len", "domain_std_qname_len", "domain_avg_entropy",
-    "domain_txt_ratio", "domain_null_ratio", "domain_duration",
-    "domain_query_rate", "domain_unique_subdomain_ratio",
-    "nxdomain_ratio", "no_response_ratio", "rejected_ratio", "rcode_entropy",
-]
+#: memorise a host, session or domain string. response_latency is excluded
+#: because it depends on the resolver and network, not on the traffic.
+FEATURE_COLUMNS = list(dict.fromkeys(c for group in FEATURE_GROUPS.values() for c in group))
+
+#: Feature sets for the Step 3 ablation runs.
+FEATURE_SETS = {
+    "all": FEATURE_COLUMNS,
+    "lexical_only": FEATURE_GROUPS["lexical"],
+    "domain_volume_shape": FEATURE_GROUPS["domain_volume"] + FEATURE_GROUPS["domain_shape"],
+    "all_minus_artefact_suspect": [c for c in FEATURE_COLUMNS if c not in FEATURE_GROUPS["artefact_suspect"]],
+}
 
 #: Kept alongside the features for splitting and analysis, never modelled.
 BOOKKEEPING_COLUMNS = [
     "ts", "window_start", "window_id", "window_query_count",
     "capture_id", "category", "tool", "base_domain", "uid", "qname", "rejoined",
+    "response_latency",
 ]
 
+# Value used for a response field when there is no (answered) response.
+_MISSING_RESPONSE_VALUES = {
+    "response_ancount": 0.0,
+    "response_min_ttl": -1.0,
+    "response_rcode": -1.0,
+    "response_latency": -1.0,
+}
 
-def to_ml_frame(df, label_col="Label", extra_cols=()):
+
+def to_ml_frame(df, label_col="Label", extra_cols=(), features=FEATURE_COLUMNS):
     """Select the model columns and fill response fields that are missing
-    when a query got no (answered) response. `extra_cols` keeps bookkeeping
-    columns (e.g. capture_id, window_id) for splitting and analysis."""
-    cols =FEATURE_COLUMNS + [c for c in extra_cols if c not in FEATURE_COLUMNS] + [label_col]
+    when a query got no (answered) response. `features` picks a feature set
+    (see FEATURE_SETS); `extra_cols` keeps bookkeeping columns (e.g.
+    capture_id, window_id) for splitting and analysis."""
+    cols = list(features) + [c for c in extra_cols if c not in features] + [label_col]
     out = df[cols].copy()
-    out["response_ancount"] = out["response_ancount"].fillna(0.0)
-    for column in ("response_min_ttl", "response_rcode", "response_latency"):
-        out[column] = out[column].fillna(-1.0)
+    for column, value in _MISSING_RESPONSE_VALUES.items():
+        if column in out:
+            out[column] = out[column].fillna(value)
     return out
 
 
@@ -394,12 +493,89 @@ def read_manifest(path=MANIFEST_PATH):
     return rows
 
 
+def find_live_sessions(zeek_dir=LIVE_ZEEK_DIR, idle_seconds=300, now=None):
+    """Group live-pipeline chunk folders (datas/zeek/<chunk>/) into sessions.
+
+    A session is one capture_live.py run: chunks with the same prefix whose
+    dumpcap indices are consecutive when ordered by chunk timestamp (dumpcap
+    restarts at 00001 on every run). A missing index ends the session. A
+    chunk folder without dns.log is a chunk with no DNS traffic and stays in
+    the session.
+
+    A session is complete when a later session with the same prefix exists
+    or its last chunk started more than `idle_seconds` before `now`
+    (default: the current time); otherwise capture may still be running.
+
+    Returns a list of dicts ordered by start time: session_id (the first
+    chunk's name), chunks, dns_logs (existing files, in order), start and
+    last_chunk_start (epoch seconds, from the chunk names, local time), and
+    complete.
+    """
+    zeek_dir = Path(zeek_dir)
+    if not zeek_dir.is_dir():
+        return []
+    chunks = []
+    for folder in zeek_dir.iterdir():
+        match = _CHUNK_NAME.match(folder.name)
+        if not folder.is_dir() or not match or folder.name.endswith("_Backup"):
+            continue
+        started = datetime.strptime(match["timestamp"], "%Y%m%d%H%M%S").timestamp()
+        chunks.append((match["prefix"], started, int(match["index"]), folder))
+    chunks.sort(key=lambda c: (c[0], c[1], c[2]))
+
+    sessions = []
+    for prefix, started, index, folder in chunks:
+        current = sessions[-1] if sessions else None
+        if current is None or current["prefix"] != prefix or index != current["last_index"] + 1:
+            current = {"prefix": prefix, "session_id": folder.name, "chunks": [], "dns_logs": [],
+                       "start": started}
+            sessions.append(current)
+        current["chunks"].append(folder.name)
+        current["last_index"] = index
+        current["last_chunk_start"] = started
+        if (folder / "dns.log").is_file():
+            current["dns_logs"].append(folder / "dns.log")
+
+    now = time.time() if now is None else now
+    for i, session in enumerate(sessions):
+        later = any(s["prefix"] == session["prefix"] and s["start"] > session["start"] for s in sessions[i + 1:])
+        session["complete"] = later or now - session["last_chunk_start"] > idle_seconds
+        del session["prefix"], session["last_index"]
+    sessions.sort(key=lambda s: s["start"])
+    return sessions
+
+
+def own_benign_manifest_rows(zeek_dir=LIVE_ZEEK_DIR, include_incomplete=False, **session_kwargs):
+    """Manifest rows for benign live-pipeline captures ("own_benign").
+
+    One row per session from find_live_sessions (complete sessions only,
+    unless include_incomplete). `zeek_dns_log` is the list of the session's
+    chunk dns.log files; build_dataset_from_manifest treats them as one
+    capture. Sessions without any dns.log are skipped.
+    """
+    rows = []
+    for session in find_live_sessions(zeek_dir, **session_kwargs):
+        if not session["dns_logs"] or not (session["complete"] or include_incomplete):
+            continue
+        rows.append({
+            "capture_id": f"{OWN_BENIGN}/{session['session_id']}",
+            "category": OWN_BENIGN,
+            "tool": OWN_BENIGN,
+            "label": "0",
+            "zeek_dns_log": list(session["dns_logs"]),
+            "session_start": session["start"],
+            "complete": session["complete"],
+        })
+    return rows
+
+
 def check_tool_categories(manifest_rows):
     """Fail loudly if a tool is used both for training and as an unseen tool.
 
-    Tool names seen in the training categories (normal/tunnel/wildcard) must
-    not appear in the evaluation-only ones (unknownTunnel/crossEndPoint), and
-    dns2tcp-key may only appear under unknownTunnel.
+    Tool names seen in the training categories (normal/tunnel/wildcard/
+    own_benign) must not appear in the evaluation-only ones
+    (unknownTunnel/crossEndPoint), and dns2tcp-key may only appear under
+    unknownTunnel.
     """
     known = set(TRAINING_CATEGORIES) | set(EVALUATION_ONLY_CATEGORIES)
     unknown = {r["category"] for r in manifest_rows} - known
@@ -428,12 +604,19 @@ def _resolve(path):
     return path if path.is_absolute() else PROJECT_ROOT / path
 
 
+def _dns_log_paths(row):
+    value = row["zeek_dns_log"]
+    paths = [value] if isinstance(value, (str, Path)) else list(value)
+    resolved = [_resolve(p) for p in paths]
+    for path in resolved:
+        if path.parent.name.endswith("_Backup"):
+            raise ValueError(f"Manifest points at a _Backup folder: {path}")
+    return resolved
+
+
 def _build_capture(row, window_seconds):
-    dns_log = _resolve(row["zeek_dns_log"])
-    if dns_log.parent.name.endswith("_Backup"):
-        raise ValueError(f"Manifest points at a _Backup folder: {dns_log}")
     frame = extract_query_records_from_zeek(
-        dns_log, row["capture_id"], row["category"], row["tool"], int(row["label"]),
+        _dns_log_paths(row), row["capture_id"], row["category"], row["tool"], int(row["label"]),
         window_seconds=window_seconds,
     )
     stats = dict(capture_id=row["capture_id"], category=row["category"], records=len(frame),
@@ -444,9 +627,12 @@ def _build_capture(row, window_seconds):
 def build_dataset_from_manifest(manifest_rows, window_seconds=WINDOW_SECONDS, n_jobs=1, verbose=True):
     """Build the combined feature table for every capture in the manifest.
 
-    Returns one DataFrame (one row per DNS record, domain aggregates
-    included). ``df.attrs["capture_stats"]`` lists, per capture, the record
-    count, malformed lines skipped and split transactions merged.
+    Rows come from read_manifest() and, for live captures,
+    own_benign_manifest_rows(); a row's zeek_dns_log may be a list of
+    consecutive chunk logs. Returns one DataFrame (one row per DNS record,
+    domain aggregates included). ``df.attrs["capture_stats"]`` lists, per
+    capture, the record count, malformed lines skipped, split transactions
+    merged and unmatched responses dropped.
     """
     manifest_rows = list(manifest_rows)
     check_tool_categories(manifest_rows)
@@ -461,7 +647,9 @@ def build_dataset_from_manifest(manifest_rows, window_seconds=WINDOW_SECONDS, n_
     for frame, capture_stats in results:
         if verbose:
             print(f"{capture_stats['capture_id']}: {capture_stats['records']} records, "
-                  f"{capture_stats['rejoined']} rejoined, {capture_stats['malformed_lines']} malformed lines skipped")
+                  f"{capture_stats['rejoined']} rejoined, "
+                  f"{capture_stats['unmatched_responses_dropped']} unmatched responses dropped, "
+                  f"{capture_stats['malformed_lines']} malformed lines skipped")
         frames.append(frame)
         stats.append(capture_stats)
     combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
