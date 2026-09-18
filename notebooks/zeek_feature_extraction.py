@@ -437,19 +437,28 @@ FEATURE_GROUPS = {
     "artefact_suspect": ["domain_qtype_diversity", "no_response_ratio"],
 }
 
-#: Columns handed to the model. Identifiers (IPs, ports, query, uid,
-#: trans_id, capture_id, tool) are deliberately excluded so the model can't
-#: memorise a host, session or domain string. response_latency is excluded
-#: because it depends on the resolver and network, not on the traffic.
-FEATURE_COLUMNS = list(dict.fromkeys(c for group in FEATURE_GROUPS.values() for c in group))
+#: Every feature the extractor computes, in model order. Identifiers (IPs,
+#: ports, query, uid, trans_id, capture_id, tool) are deliberately excluded
+#: so a model can't memorise a host, session or domain string.
+#: response_latency is excluded because it depends on the resolver and
+#: network, not on the traffic.
+ALL_FEATURE_COLUMNS = list(dict.fromkeys(c for group in FEATURE_GROUPS.values() for c in group))
 
-#: Feature sets for the Step 3 ablation runs.
+#: Default model inputs: every feature except the artefact-suspect pair. In
+#: run 1 (results/zeek_run.md) dropping domain_qtype_diversity and
+#: no_response_ratio raised unseen-tool recall from 97.09% to 99.18% with
+#: false positive rates of 0.00% on held-out normal and wildcard. Both are
+#: still computed and stay available through FEATURE_SETS["all"].
+FEATURE_COLUMNS = [c for c in ALL_FEATURE_COLUMNS if c not in FEATURE_GROUPS["artefact_suspect"]]
+
+#: Feature sets for the ablation runs. "all" is run 1's default.
 FEATURE_SETS = {
-    "all": FEATURE_COLUMNS,
+    "all": ALL_FEATURE_COLUMNS,
     "lexical_only": FEATURE_GROUPS["lexical"],
     "domain_volume_shape": FEATURE_GROUPS["domain_volume"] + FEATURE_GROUPS["domain_shape"],
-    "all_minus_artefact_suspect": [c for c in FEATURE_COLUMNS if c not in FEATURE_GROUPS["artefact_suspect"]],
+    "all_minus_artefact_suspect": FEATURE_COLUMNS,
 }
+DEFAULT_FEATURE_SET = "all_minus_artefact_suspect"
 
 #: Kept alongside the features for splitting and analysis, never modelled.
 BOOKKEEPING_COLUMNS = [

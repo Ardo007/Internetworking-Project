@@ -1,0 +1,472 @@
+{
+ "run": "run1_all_50ep",
+ "name": "B-all_minus_artefact_suspect",
+ "config": "B",
+ "feature_set": "all_minus_artefact_suspect",
+ "per_run": [
+  {
+   "test_accuracy": 0.9999183413494909,
+   "collapsed": 0.0,
+   "test_benign": 1.9047619047619046e-05,
+   "test_tunnel": 0.9995418360918619,
+   "fpr_normal": 1.3115270108987895e-05,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "unseen_tool": 0.9911268440818674,
+   "unseen_platform": 0.9962318185243801,
+   "unseen_tool/cobalstrike": 0.8815746594538226,
+   "unseen_tool/dns2tcp-key": 0.9909709159311243,
+   "unseen_tool/dns2tcp-txt": 0.9736086315299232,
+   "unseen_tool/ozymandns": 1.0,
+   "unseen_tool/tcp-over-dns-CNAME": 1.0,
+   "unseen_tool/tcp-over-dns-TXT": 1.0,
+   "unseen_platform/AndIodine-CNAME": 0.9980354677710523,
+   "unseen_platform/AndIodine-MX": 0.9984161552167887,
+   "unseen_platform/AndIodine-NULL": 0.9886055344546935,
+   "unseen_platform/AndIodine-SRV": 0.9977655900873451,
+   "unseen_platform/AndIodine-TXT": 0.9929529216012528
+  },
+  {
+   "test_accuracy": 0.99991017548444,
+   "collapsed": 0.0,
+   "test_benign": 2.857142857142857e-05,
+   "test_tunnel": 0.9995418360918619,
+   "fpr_normal": 1.3115270108987895e-05,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "unseen_tool": 0.9921690535659736,
+   "unseen_platform": 0.9962318185243801,
+   "unseen_tool/cobalstrike": 0.8806621912272697,
+   "unseen_tool/dns2tcp-key": 0.9997684850238749,
+   "unseen_tool/dns2tcp-txt": 0.9736086315299232,
+   "unseen_tool/ozymandns": 1.0,
+   "unseen_tool/tcp-over-dns-CNAME": 1.0,
+   "unseen_tool/tcp-over-dns-TXT": 1.0,
+   "unseen_platform/AndIodine-CNAME": 0.9980354677710523,
+   "unseen_platform/AndIodine-MX": 0.9984161552167887,
+   "unseen_platform/AndIodine-NULL": 0.9886055344546935,
+   "unseen_platform/AndIodine-SRV": 0.9977655900873451,
+   "unseen_platform/AndIodine-TXT": 0.9929529216012528
+  },
+  {
+   "test_accuracy": 0.9999183413494909,
+   "collapsed": 0.0,
+   "test_benign": 1.9047619047619046e-05,
+   "test_tunnel": 0.9995418360918619,
+   "fpr_normal": 1.3115270108987895e-05,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "unseen_tool": 0.9914179439722557,
+   "unseen_platform": 0.9962318185243801,
+   "unseen_tool/cobalstrike": 0.881313954246236,
+   "unseen_tool/dns2tcp-key": 0.9934307625524527,
+   "unseen_tool/dns2tcp-txt": 0.9736086315299232,
+   "unseen_tool/ozymandns": 1.0,
+   "unseen_tool/tcp-over-dns-CNAME": 1.0,
+   "unseen_tool/tcp-over-dns-TXT": 1.0,
+   "unseen_platform/AndIodine-CNAME": 0.9980354677710523,
+   "unseen_platform/AndIodine-MX": 0.9984161552167887,
+   "unseen_platform/AndIodine-NULL": 0.9886055344546935,
+   "unseen_platform/AndIodine-SRV": 0.9977655900873451,
+   "unseen_platform/AndIodine-TXT": 0.9929529216012528
+  },
+  {
+   "test_accuracy": 0.9999265072145418,
+   "collapsed": 0.0,
+   "test_benign": 9.523809523809523e-06,
+   "test_tunnel": 0.9995418360918619,
+   "fpr_normal": 3.934581032696368e-05,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "unseen_tool": 0.9922337424305044,
+   "unseen_platform": 0.9962318185243801,
+   "unseen_tool/cobalstrike": 0.8819005409633057,
+   "unseen_tool/dns2tcp-key": 0.9997684850238749,
+   "unseen_tool/dns2tcp-txt": 0.9736086315299232,
+   "unseen_tool/ozymandns": 1.0,
+   "unseen_tool/tcp-over-dns-CNAME": 0.9999925283362846,
+   "unseen_tool/tcp-over-dns-TXT": 1.0,
+   "unseen_platform/AndIodine-CNAME": 0.9980354677710523,
+   "unseen_platform/AndIodine-MX": 0.9984161552167887,
+   "unseen_platform/AndIodine-NULL": 0.9886055344546935,
+   "unseen_platform/AndIodine-SRV": 0.9977655900873451,
+   "unseen_platform/AndIodine-TXT": 0.9929529216012528
+  },
+  {
+   "test_accuracy": 0.9999183413494909,
+   "collapsed": 0.0,
+   "test_benign": 1.9047619047619046e-05,
+   "test_tunnel": 0.9995418360918619,
+   "fpr_normal": 1.3115270108987895e-05,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "unseen_tool": 0.9921798350433955,
+   "unseen_platform": 0.9948903459190594,
+   "unseen_tool/cobalstrike": 0.8808577201329597,
+   "unseen_tool/dns2tcp-key": 0.9997684850238749,
+   "unseen_tool/dns2tcp-txt": 0.9736086315299232,
+   "unseen_tool/ozymandns": 1.0,
+   "unseen_tool/tcp-over-dns-CNAME": 1.0,
+   "unseen_tool/tcp-over-dns-TXT": 1.0,
+   "unseen_platform/AndIodine-CNAME": 0.9980354677710523,
+   "unseen_platform/AndIodine-MX": 0.9984161552167887,
+   "unseen_platform/AndIodine-NULL": 0.9886055344546935,
+   "unseen_platform/AndIodine-SRV": 0.9917394542623061,
+   "unseen_platform/AndIodine-TXT": 0.9929529216012528
+  }
+ ],
+ "epochs": [
+  50,
+  50,
+  50,
+  50,
+  50
+ ],
+ "histories": null,
+ "input_columns": [
+  "qname_len",
+  "label_count",
+  "max_label_len",
+  "avg_label_len",
+  "first_label_len",
+  "digit_ratio",
+  "hex_ratio",
+  "unique_char_ratio",
+  "entropy",
+  "first_label_entropy",
+  "response_ancount",
+  "response_min_ttl",
+  "response_rcode",
+  "domain_query_count",
+  "domain_unique_qnames",
+  "domain_query_rate",
+  "domain_duration",
+  "domain_unique_subdomain_ratio",
+  "domain_avg_qname_len",
+  "domain_std_qname_len",
+  "domain_avg_entropy",
+  "domain_txt_ratio",
+  "domain_null_ratio",
+  "nxdomain_ratio",
+  "rejected_ratio",
+  "rcode_entropy",
+  "proto_udp",
+  "qtype_name_AAAA",
+  "qtype_name_ANY",
+  "qtype_name_CNAME",
+  "qtype_name_HTTPS",
+  "qtype_name_MX",
+  "qtype_name_NS",
+  "qtype_name_NULL",
+  "qtype_name_OPT",
+  "qtype_name_OTHER",
+  "qtype_name_PTR",
+  "qtype_name_SOA",
+  "qtype_name_SRV",
+  "qtype_name_SVCB",
+  "qtype_name_TXT"
+ ],
+ "train_rows": {
+  "benign": 132514,
+  "tunnel": 106680
+ },
+ "val_rows": {
+  "tunnel": 22621,
+  "benign": 18232
+ },
+ "settings": {
+  "epoch_cap": 50,
+  "hyperparameters": {
+   "n_of_hidden_layers": 1,
+   "n_neurons": 24,
+   "activation": "tanh",
+   "dropout_rate": 0.5,
+   "l2_reg": 0.0001,
+   "epochs": 50,
+   "batch_size": 128,
+   "early_stopping": true
+  },
+  "row_caps": {
+   "default": 200,
+   "wildcard": 1000
+  },
+  "sampling_seed": 0,
+  "window_seconds": 60,
+  "feature_columns": [
+   "proto",
+   "qname_len",
+   "label_count",
+   "max_label_len",
+   "avg_label_len",
+   "first_label_len",
+   "digit_ratio",
+   "hex_ratio",
+   "unique_char_ratio",
+   "entropy",
+   "first_label_entropy",
+   "qtype_name",
+   "response_ancount",
+   "response_min_ttl",
+   "response_rcode",
+   "domain_query_count",
+   "domain_unique_qnames",
+   "domain_query_rate",
+   "domain_duration",
+   "domain_unique_subdomain_ratio",
+   "domain_avg_qname_len",
+   "domain_std_qname_len",
+   "domain_avg_entropy",
+   "domain_txt_ratio",
+   "domain_null_ratio",
+   "nxdomain_ratio",
+   "rejected_ratio",
+   "rcode_entropy"
+  ],
+  "splits_sha256": "0ad16bd5e36bf0a4108bbd541f4005897b8111927c73422af9cbea4f9bfe1282"
+ },
+ "git": {
+  "commit": "baf6543e643c88164dc2bf4f33fc5741da529ca0",
+  "dirty": false
+ },
+ "environment": {
+  "python": "3.13.15",
+  "tensorflow": "2.21.0",
+  "keras": "3.15.1",
+  "numpy": "2.5.3",
+  "pandas": "3.0.5",
+  "scikit-learn": "1.9.1",
+  "platform": "Windows-11-10.0.26200-SP0"
+ },
+ "trained_at": "2026-09-17T20:34:31+00:00",
+ "source": "re-scored from the saved models in `models/zeek_bilstm/<name>/`",
+ "summary": {
+  "test_accuracy": {
+   "min": 0.99991017548444,
+   "avg": 0.9999183413494908,
+   "max": 0.9999265072145418
+  },
+  "collapsed": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "test_benign": {
+   "min": 9.523809523809523e-06,
+   "avg": 1.9047619047619046e-05,
+   "max": 2.857142857142857e-05
+  },
+  "test_tunnel": {
+   "min": 0.9995418360918619,
+   "avg": 0.9995418360918619,
+   "max": 0.9995418360918619
+  },
+  "fpr_normal": {
+   "min": 1.3115270108987895e-05,
+   "avg": 1.836137815258305e-05,
+   "max": 3.934581032696368e-05
+  },
+  "fpr_wildcard": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "fpr_wildcard_00007_00012": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "unseen_tool": {
+   "min": 0.9911268440818674,
+   "avg": 0.9918254838187993,
+   "max": 0.9922337424305044
+  },
+  "unseen_platform": {
+   "min": 0.9948903459190594,
+   "avg": 0.995963524003316,
+   "max": 0.9962318185243801
+  },
+  "unseen_tool/cobalstrike": {
+   "min": 0.8806621912272697,
+   "avg": 0.8812618132047187,
+   "max": 0.8819005409633057
+  },
+  "unseen_tool/dns2tcp-key": {
+   "min": 0.9909709159311243,
+   "avg": 0.9967414267110403,
+   "max": 0.9997684850238749
+  },
+  "unseen_tool/dns2tcp-txt": {
+   "min": 0.9736086315299232,
+   "avg": 0.9736086315299233,
+   "max": 0.9736086315299232
+  },
+  "unseen_tool/ozymandns": {
+   "min": 1.0,
+   "avg": 1.0,
+   "max": 1.0
+  },
+  "unseen_tool/tcp-over-dns-CNAME": {
+   "min": 0.9999925283362846,
+   "avg": 0.9999985056672569,
+   "max": 1.0
+  },
+  "unseen_tool/tcp-over-dns-TXT": {
+   "min": 1.0,
+   "avg": 1.0,
+   "max": 1.0
+  },
+  "unseen_platform/AndIodine-CNAME": {
+   "min": 0.9980354677710523,
+   "avg": 0.9980354677710522,
+   "max": 0.9980354677710523
+  },
+  "unseen_platform/AndIodine-MX": {
+   "min": 0.9984161552167887,
+   "avg": 0.9984161552167887,
+   "max": 0.9984161552167887
+  },
+  "unseen_platform/AndIodine-NULL": {
+   "min": 0.9886055344546935,
+   "avg": 0.9886055344546933,
+   "max": 0.9886055344546935
+  },
+  "unseen_platform/AndIodine-SRV": {
+   "min": 0.9917394542623061,
+   "avg": 0.9965603629223374,
+   "max": 0.9977655900873451
+  },
+  "unseen_platform/AndIodine-TXT": {
+   "min": 0.9929529216012528,
+   "avg": 0.9929529216012527,
+   "max": 0.9929529216012528
+  }
+ },
+ "window_sizes": [
+  {
+   "group": "test_benign",
+   "bucket": "<10",
+   "rows": 1,
+   "rate": 0.0
+  },
+  {
+   "group": "test_benign",
+   "bucket": "10-99",
+   "rows": 88,
+   "rate": 0.0
+  },
+  {
+   "group": "test_benign",
+   "bucket": ">=100",
+   "rows": 104911,
+   "rate": 1.906377786886027e-05
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": "<10",
+   "rows": 22,
+   "rate": 0.6363636363636364
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": "10-99",
+   "rows": 1275,
+   "rate": 1.0
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": ">=100",
+   "rows": 16164,
+   "rate": 1.0
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": "<10",
+   "rows": 2,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": "10-99",
+   "rows": 129,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": ">=100",
+   "rows": 76116,
+   "rate": 1.839297913710652e-05
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": "10-99",
+   "rows": 143,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": ">=100",
+   "rows": 162400,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": "10-99",
+   "rows": 143,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": ">=100",
+   "rows": 162400,
+   "rate": 0.0
+  },
+  {
+   "group": "unseen_tool",
+   "bucket": "<10",
+   "rows": 141,
+   "rate": 0.20283687943262413
+  },
+  {
+   "group": "unseen_tool",
+   "bucket": "10-99",
+   "rows": 4130,
+   "rate": 0.9142372881355932
+  },
+  {
+   "group": "unseen_tool",
+   "bucket": ">=100",
+   "rows": 273984,
+   "rate": 0.9934010745153001
+  },
+  {
+   "group": "unseen_platform",
+   "bucket": "<10",
+   "rows": 16,
+   "rate": 0.5
+  },
+  {
+   "group": "unseen_platform",
+   "bucket": "10-99",
+   "rows": 5781,
+   "rate": 0.9723577235772357
+  },
+  {
+   "group": "unseen_platform",
+   "bucket": ">=100",
+   "rows": 60548,
+   "rate": 0.9983484177842372
+  }
+ ]
+}

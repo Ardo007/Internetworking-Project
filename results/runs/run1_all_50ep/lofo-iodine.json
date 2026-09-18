@@ -1,0 +1,399 @@
+{
+ "run": "run1_all_50ep",
+ "name": "lofo-iodine",
+ "config": "B",
+ "feature_set": "all",
+ "per_run": [
+  {
+   "collapsed": 0.0,
+   "test_benign": null,
+   "test_tunnel": null,
+   "fpr_normal": 0.0,
+   "fpr_wildcard": 0.0030330435638569486,
+   "fpr_wildcard_00007_00012": 0.0030330435638569486,
+   "held_out_family": 0.596031880617263,
+   "held_out_family/iodine-NULL": 0.8476658476658476,
+   "held_out_family/iodine-a": 0.0023374238250271307,
+   "held_out_family/iodine-cname": 0.9997799537902959,
+   "held_out_family/iodine-mx": 0.8421980300673925,
+   "held_out_family/iodine-private": 0.9056514168117777,
+   "held_out_family/iodine-srv": 0.0127453191969321,
+   "held_out_family/iodine-txt": 0.9990856446205425
+  },
+  {
+   "collapsed": 0.0,
+   "test_benign": null,
+   "test_tunnel": null,
+   "fpr_normal": 0.0,
+   "fpr_wildcard": 0.002989978036581089,
+   "fpr_wildcard_00007_00012": 0.002989978036581089,
+   "held_out_family": 0.5682550449381041,
+   "held_out_family/iodine-NULL": 0.8195638820638821,
+   "held_out_family/iodine-a": 0.002086985558059938,
+   "held_out_family/iodine-cname": 0.9997799537902959,
+   "held_out_family/iodine-mx": 0.7223431829963711,
+   "held_out_family/iodine-private": 0.8687668196928922,
+   "held_out_family/iodine-srv": 0.006767426122264832,
+   "held_out_family/iodine-txt": 0.9975617189881134
+  },
+  {
+   "collapsed": 0.0,
+   "test_benign": null,
+   "test_tunnel": null,
+   "fpr_normal": 0.0,
+   "fpr_wildcard": 0.0031437834911377297,
+   "fpr_wildcard_00007_00012": 0.0031437834911377297,
+   "held_out_family": 0.5908936747498729,
+   "held_out_family/iodine-NULL": 0.8307739557739557,
+   "held_out_family/iodine-a": 0.0032556974705735034,
+   "held_out_family/iodine-cname": 0.9997799537902959,
+   "held_out_family/iodine-mx": 0.8296526697770866,
+   "held_out_family/iodine-private": 0.8872882697482982,
+   "held_out_family/iodine-srv": 0.01691856530566208,
+   "held_out_family/iodine-txt": 0.9984760743675709
+  },
+  {
+   "collapsed": 0.0,
+   "test_benign": null,
+   "test_tunnel": null,
+   "fpr_normal": 0.0,
+   "fpr_wildcard": 0.003008434691127886,
+   "fpr_wildcard_00007_00012": 0.003008434691127886,
+   "held_out_family": 0.5855689333559437,
+   "held_out_family/iodine-NULL": 0.8289312039312039,
+   "held_out_family/iodine-a": 0.002086985558059938,
+   "held_out_family/iodine-cname": 0.9997799537902959,
+   "held_out_family/iodine-mx": 0.8128564022809746,
+   "held_out_family/iodine-private": 0.8803229381035301,
+   "held_out_family/iodine-srv": 0.007895330475975638,
+   "held_out_family/iodine-txt": 0.998171289241085
+  },
+  {
+   "collapsed": 0.0,
+   "test_benign": null,
+   "test_tunnel": null,
+   "fpr_normal": 0.0,
+   "fpr_wildcard": 0.0030022824729456204,
+   "fpr_wildcard_00007_00012": 0.0030022824729456204,
+   "held_out_family": 0.5709004578599288,
+   "held_out_family/iodine-NULL": 0.8167997542997543,
+   "held_out_family/iodine-a": 0.0019200267134151432,
+   "held_out_family/iodine-cname": 0.9997799537902959,
+   "held_out_family/iodine-mx": 0.7354069466044583,
+   "held_out_family/iodine-private": 0.8728826974829824,
+   "held_out_family/iodine-srv": 0.009136025265057524,
+   "held_out_family/iodine-txt": 0.9980188966778422
+  }
+ ],
+ "epochs": [
+  50,
+  50,
+  50,
+  50,
+  50
+ ],
+ "histories": null,
+ "input_columns": [
+  "qname_len",
+  "label_count",
+  "max_label_len",
+  "avg_label_len",
+  "first_label_len",
+  "digit_ratio",
+  "hex_ratio",
+  "unique_char_ratio",
+  "entropy",
+  "first_label_entropy",
+  "response_ancount",
+  "response_min_ttl",
+  "response_rcode",
+  "domain_query_count",
+  "domain_unique_qnames",
+  "domain_query_rate",
+  "domain_duration",
+  "domain_unique_subdomain_ratio",
+  "domain_avg_qname_len",
+  "domain_std_qname_len",
+  "domain_avg_entropy",
+  "domain_txt_ratio",
+  "domain_null_ratio",
+  "domain_qtype_diversity",
+  "nxdomain_ratio",
+  "no_response_ratio",
+  "rejected_ratio",
+  "rcode_entropy",
+  "proto_udp",
+  "qtype_name_AAAA",
+  "qtype_name_ANY",
+  "qtype_name_CNAME",
+  "qtype_name_HTTPS",
+  "qtype_name_MX",
+  "qtype_name_NS",
+  "qtype_name_NULL",
+  "qtype_name_OPT",
+  "qtype_name_OTHER",
+  "qtype_name_PTR",
+  "qtype_name_SOA",
+  "qtype_name_SRV",
+  "qtype_name_SVCB",
+  "qtype_name_TXT"
+ ],
+ "train_rows": {
+  "benign": 132514,
+  "tunnel": 74112
+ },
+ "val_rows": {
+  "benign": 18232,
+  "tunnel": 14465
+ },
+ "settings": {
+  "epoch_cap": 50,
+  "hyperparameters": {
+   "n_of_hidden_layers": 1,
+   "n_neurons": 24,
+   "activation": "tanh",
+   "dropout_rate": 0.5,
+   "l2_reg": 0.0001,
+   "epochs": 50,
+   "batch_size": 128,
+   "early_stopping": true
+  },
+  "row_caps": {
+   "default": 200,
+   "wildcard": 1000
+  },
+  "sampling_seed": 0,
+  "window_seconds": 60,
+  "feature_columns": [
+   "proto",
+   "qname_len",
+   "label_count",
+   "max_label_len",
+   "avg_label_len",
+   "first_label_len",
+   "digit_ratio",
+   "hex_ratio",
+   "unique_char_ratio",
+   "entropy",
+   "first_label_entropy",
+   "qtype_name",
+   "response_ancount",
+   "response_min_ttl",
+   "response_rcode",
+   "domain_query_count",
+   "domain_unique_qnames",
+   "domain_query_rate",
+   "domain_duration",
+   "domain_unique_subdomain_ratio",
+   "domain_avg_qname_len",
+   "domain_std_qname_len",
+   "domain_avg_entropy",
+   "domain_txt_ratio",
+   "domain_null_ratio",
+   "domain_qtype_diversity",
+   "nxdomain_ratio",
+   "no_response_ratio",
+   "rejected_ratio",
+   "rcode_entropy"
+  ],
+  "splits_sha256": "0ad16bd5e36bf0a4108bbd541f4005897b8111927c73422af9cbea4f9bfe1282"
+ },
+ "git": {
+  "commit": "baf6543e643c88164dc2bf4f33fc5741da529ca0",
+  "dirty": false
+ },
+ "environment": {
+  "python": "3.13.15",
+  "tensorflow": "2.21.0",
+  "keras": "3.15.1",
+  "numpy": "2.5.3",
+  "pandas": "3.0.5",
+  "scikit-learn": "1.9.1",
+  "platform": "Windows-11-10.0.26200-SP0"
+ },
+ "trained_at": "2026-09-17T22:56:13+00:00",
+ "source": "re-scored from the saved models in `models/zeek_bilstm/<name>/`",
+ "family_rows": 58970,
+ "summary": {
+  "collapsed": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "test_benign": {
+   "min": null,
+   "avg": null,
+   "max": null
+  },
+  "test_tunnel": {
+   "min": null,
+   "avg": null,
+   "max": null
+  },
+  "fpr_normal": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "fpr_wildcard": {
+   "min": 0.002989978036581089,
+   "avg": 0.003035504451129855,
+   "max": 0.0031437834911377297
+  },
+  "fpr_wildcard_00007_00012": {
+   "min": 0.002989978036581089,
+   "avg": 0.003035504451129855,
+   "max": 0.0031437834911377297
+  },
+  "held_out_family": {
+   "min": 0.5682550449381041,
+   "avg": 0.5823299983042224,
+   "max": 0.596031880617263
+  },
+  "held_out_family/iodine-NULL": {
+   "min": 0.8167997542997543,
+   "avg": 0.8287469287469287,
+   "max": 0.8476658476658476
+  },
+  "held_out_family/iodine-a": {
+   "min": 0.0019200267134151432,
+   "avg": 0.0023374238250271307,
+   "max": 0.0032556974705735034
+  },
+  "held_out_family/iodine-cname": {
+   "min": 0.9997799537902959,
+   "avg": 0.999779953790296,
+   "max": 0.9997799537902959
+  },
+  "held_out_family/iodine-mx": {
+   "min": 0.7223431829963711,
+   "avg": 0.7884914463452566,
+   "max": 0.8421980300673925
+  },
+  "held_out_family/iodine-private": {
+   "min": 0.8687668196928922,
+   "avg": 0.8829824283678962,
+   "max": 0.9056514168117777
+  },
+  "held_out_family/iodine-srv": {
+   "min": 0.006767426122264832,
+   "avg": 0.010692533273178434,
+   "max": 0.01691856530566208
+  },
+  "held_out_family/iodine-txt": {
+   "min": 0.9975617189881134,
+   "avg": 0.9982627247790308,
+   "max": 0.9990856446205425
+  }
+ },
+ "window_sizes": [
+  {
+   "group": "test_benign",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "test_benign",
+   "bucket": "10-99",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "test_benign",
+   "bucket": ">=100",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": "10-99",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": ">=100",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": "<10",
+   "rows": 2,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": "10-99",
+   "rows": 129,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": ">=100",
+   "rows": 76116,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": "10-99",
+   "rows": 143,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": ">=100",
+   "rows": 162400,
+   "rate": 0.0030381773399014776
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": "10-99",
+   "rows": 143,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": ">=100",
+   "rows": 162400,
+   "rate": 0.0030381773399014776
+  },
+  {
+   "group": "held_out_family",
+   "bucket": "<10",
+   "rows": 15,
+   "rate": 0.0
+  },
+  {
+   "group": "held_out_family",
+   "bucket": "10-99",
+   "rows": 3760,
+   "rate": 0.7231914893617022
+  },
+  {
+   "group": "held_out_family",
+   "bucket": ">=100",
+   "rows": 55195,
+   "rate": 0.5728924721442159
+  }
+ ]
+}

@@ -1,0 +1,425 @@
+{
+ "run": "run1_all_50ep",
+ "name": "B-domain_volume_shape",
+ "config": "B",
+ "feature_set": "domain_volume_shape",
+ "per_run": [
+  {
+   "test_accuracy": 0.999330399065825,
+   "collapsed": 0.0,
+   "test_benign": 0.00014285714285714287,
+   "test_tunnel": 0.9961628772693432,
+   "fpr_normal": 0.00019672905163481842,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "unseen_tool": 0.923063377118111,
+   "unseen_platform": 0.9947546913859372,
+   "unseen_tool/cobalstrike": 0.92224467183732,
+   "unseen_tool/dns2tcp-key": 0.5941253074808277,
+   "unseen_tool/dns2tcp-txt": 1.0,
+   "unseen_tool/ozymandns": 0.28673669629458615,
+   "unseen_tool/tcp-over-dns-CNAME": 0.9999178116991311,
+   "unseen_tool/tcp-over-dns-TXT": 1.0,
+   "unseen_platform/AndIodine-CNAME": 0.9964426038016353,
+   "unseen_platform/AndIodine-MX": 0.9978882069557183,
+   "unseen_platform/AndIodine-NULL": 0.9886055344546935,
+   "unseen_platform/AndIodine-SRV": 0.9937030266097908,
+   "unseen_platform/AndIodine-TXT": 0.9929529216012528
+  },
+  {
+   "test_accuracy": 0.9993385649308759,
+   "collapsed": 0.0,
+   "test_benign": 0.00013333333333333334,
+   "test_tunnel": 0.9961628772693432,
+   "fpr_normal": 0.00019672905163481842,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "unseen_tool": 0.9305097841907602,
+   "unseen_platform": 0.9961112367171603,
+   "unseen_tool/cobalstrike": 0.9268721892719807,
+   "unseen_tool/dns2tcp-key": 0.6479236000578787,
+   "unseen_tool/dns2tcp-txt": 1.0,
+   "unseen_tool/ozymandns": 0.3031282465658548,
+   "unseen_tool/tcp-over-dns-CNAME": 0.9999178116991311,
+   "unseen_tool/tcp-over-dns-TXT": 1.0,
+   "unseen_platform/AndIodine-CNAME": 0.9980354677710523,
+   "unseen_platform/AndIodine-MX": 0.9978882069557183,
+   "unseen_platform/AndIodine-NULL": 0.9886055344546935,
+   "unseen_platform/AndIodine-SRV": 0.9977655900873451,
+   "unseen_platform/AndIodine-TXT": 0.9929529216012528
+  },
+  {
+   "test_accuracy": 0.999330399065825,
+   "collapsed": 0.0,
+   "test_benign": 0.00014285714285714287,
+   "test_tunnel": 0.9961628772693432,
+   "fpr_normal": 0.00019672905163481842,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "unseen_tool": 0.9216222529693986,
+   "unseen_platform": 0.9938503278317884,
+   "unseen_tool/cobalstrike": 0.92224467183732,
+   "unseen_tool/dns2tcp-key": 0.5768195630154825,
+   "unseen_tool/dns2tcp-txt": 1.0,
+   "unseen_tool/ozymandns": 0.309477086459656,
+   "unseen_tool/tcp-over-dns-CNAME": 0.9999178116991311,
+   "unseen_tool/tcp-over-dns-TXT": 1.0,
+   "unseen_platform/AndIodine-CNAME": 0.9964426038016353,
+   "unseen_platform/AndIodine-MX": 0.9978882069557183,
+   "unseen_platform/AndIodine-NULL": 0.9886055344546935,
+   "unseen_platform/AndIodine-SRV": 0.9977655900873451,
+   "unseen_platform/AndIodine-TXT": 0.9812077909366742
+  },
+  {
+   "test_accuracy": 0.9993467307959268,
+   "collapsed": 0.0,
+   "test_benign": 0.0001238095238095238,
+   "test_tunnel": 0.9961628772693432,
+   "fpr_normal": 0.00019672905163481842,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "unseen_tool": 0.9232897881439687,
+   "unseen_platform": 0.9938352551058859,
+   "unseen_tool/cobalstrike": 0.92224467183732,
+   "unseen_tool/dns2tcp-key": 0.4407755751700188,
+   "unseen_tool/dns2tcp-txt": 1.0,
+   "unseen_tool/ozymandns": 0.9056908692138982,
+   "unseen_tool/tcp-over-dns-CNAME": 0.9999178116991311,
+   "unseen_tool/tcp-over-dns-TXT": 1.0,
+   "unseen_platform/AndIodine-CNAME": 0.9964426038016353,
+   "unseen_platform/AndIodine-MX": 0.9978882069557183,
+   "unseen_platform/AndIodine-NULL": 0.9886055344546935,
+   "unseen_platform/AndIodine-SRV": 0.9937030266097908,
+   "unseen_platform/AndIodine-TXT": 0.986982480180092
+  },
+  {
+   "test_accuracy": 0.9993548966609778,
+   "collapsed": 0.0,
+   "test_benign": 0.00011428571428571428,
+   "test_tunnel": 0.9961628772693432,
+   "fpr_normal": 0.00015738324130785473,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "unseen_tool": 0.9236671398537313,
+   "unseen_platform": 0.9929459642776396,
+   "unseen_tool/cobalstrike": 0.92224467183732,
+   "unseen_tool/dns2tcp-key": 0.6216755896397048,
+   "unseen_tool/dns2tcp-txt": 1.0,
+   "unseen_tool/ozymandns": 0.1962368694447651,
+   "unseen_tool/tcp-over-dns-CNAME": 0.9999178116991311,
+   "unseen_tool/tcp-over-dns-TXT": 1.0,
+   "unseen_platform/AndIodine-CNAME": 0.9964426038016353,
+   "unseen_platform/AndIodine-MX": 0.9978882069557183,
+   "unseen_platform/AndIodine-NULL": 0.9886055344546935,
+   "unseen_platform/AndIodine-SRV": 0.9937030266097908,
+   "unseen_platform/AndIodine-TXT": 0.9812077909366742
+  }
+ ],
+ "epochs": [
+  50,
+  35,
+  50,
+  27,
+  50
+ ],
+ "histories": null,
+ "input_columns": [
+  "domain_query_count",
+  "domain_unique_qnames",
+  "domain_query_rate",
+  "domain_duration",
+  "domain_unique_subdomain_ratio",
+  "domain_avg_qname_len",
+  "domain_std_qname_len",
+  "domain_avg_entropy",
+  "domain_txt_ratio",
+  "domain_null_ratio",
+  "domain_qtype_diversity"
+ ],
+ "train_rows": {
+  "benign": 132514,
+  "tunnel": 106680
+ },
+ "val_rows": {
+  "tunnel": 22621,
+  "benign": 18232
+ },
+ "settings": {
+  "epoch_cap": 50,
+  "hyperparameters": {
+   "n_of_hidden_layers": 1,
+   "n_neurons": 24,
+   "activation": "tanh",
+   "dropout_rate": 0.5,
+   "l2_reg": 0.0001,
+   "epochs": 50,
+   "batch_size": 128,
+   "early_stopping": true
+  },
+  "row_caps": {
+   "default": 200,
+   "wildcard": 1000
+  },
+  "sampling_seed": 0,
+  "window_seconds": 60,
+  "feature_columns": [
+   "domain_query_count",
+   "domain_unique_qnames",
+   "domain_query_rate",
+   "domain_duration",
+   "domain_unique_subdomain_ratio",
+   "domain_avg_qname_len",
+   "domain_std_qname_len",
+   "domain_avg_entropy",
+   "domain_txt_ratio",
+   "domain_null_ratio",
+   "domain_qtype_diversity"
+  ],
+  "splits_sha256": "0ad16bd5e36bf0a4108bbd541f4005897b8111927c73422af9cbea4f9bfe1282"
+ },
+ "git": {
+  "commit": "baf6543e643c88164dc2bf4f33fc5741da529ca0",
+  "dirty": false
+ },
+ "environment": {
+  "python": "3.13.15",
+  "tensorflow": "2.21.0",
+  "keras": "3.15.1",
+  "numpy": "2.5.3",
+  "pandas": "3.0.5",
+  "scikit-learn": "1.9.1",
+  "platform": "Windows-11-10.0.26200-SP0"
+ },
+ "trained_at": "2026-09-17T19:52:07+00:00",
+ "source": "re-scored from the saved models in `models/zeek_bilstm/<name>/`",
+ "summary": {
+  "test_accuracy": {
+   "min": 0.999330399065825,
+   "avg": 0.9993401981038861,
+   "max": 0.9993548966609778
+  },
+  "collapsed": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "test_benign": {
+   "min": 0.00011428571428571428,
+   "avg": 0.00013142857142857146,
+   "max": 0.00014285714285714287
+  },
+  "test_tunnel": {
+   "min": 0.9961628772693432,
+   "avg": 0.9961628772693432,
+   "max": 0.9961628772693432
+  },
+  "fpr_normal": {
+   "min": 0.00015738324130785473,
+   "avg": 0.00018885988956942568,
+   "max": 0.00019672905163481842
+  },
+  "fpr_wildcard": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "fpr_wildcard_00007_00012": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "unseen_tool": {
+   "min": 0.9216222529693986,
+   "avg": 0.924430468455194,
+   "max": 0.9305097841907602
+  },
+  "unseen_platform": {
+   "min": 0.9929459642776396,
+   "avg": 0.9942994950636823,
+   "max": 0.9961112367171603
+  },
+  "unseen_tool/cobalstrike": {
+   "min": 0.92224467183732,
+   "avg": 0.9231701753242522,
+   "max": 0.9268721892719807
+  },
+  "unseen_tool/dns2tcp-key": {
+   "min": 0.4407755751700188,
+   "avg": 0.5762639270727825,
+   "max": 0.6479236000578787
+  },
+  "unseen_tool/dns2tcp-txt": {
+   "min": 1.0,
+   "avg": 1.0,
+   "max": 1.0
+  },
+  "unseen_tool/ozymandns": {
+   "min": 0.1962368694447651,
+   "avg": 0.40025395359575205,
+   "max": 0.9056908692138982
+  },
+  "unseen_tool/tcp-over-dns-CNAME": {
+   "min": 0.9999178116991311,
+   "avg": 0.9999178116991312,
+   "max": 0.9999178116991311
+  },
+  "unseen_tool/tcp-over-dns-TXT": {
+   "min": 1.0,
+   "avg": 1.0,
+   "max": 1.0
+  },
+  "unseen_platform/AndIodine-CNAME": {
+   "min": 0.9964426038016353,
+   "avg": 0.9967611765955187,
+   "max": 0.9980354677710523
+  },
+  "unseen_platform/AndIodine-MX": {
+   "min": 0.9978882069557183,
+   "avg": 0.9978882069557183,
+   "max": 0.9978882069557183
+  },
+  "unseen_platform/AndIodine-NULL": {
+   "min": 0.9886055344546935,
+   "avg": 0.9886055344546933,
+   "max": 0.9886055344546935
+  },
+  "unseen_platform/AndIodine-SRV": {
+   "min": 0.9937030266097908,
+   "avg": 0.9953280520008125,
+   "max": 0.9977655900873451
+  },
+  "unseen_platform/AndIodine-TXT": {
+   "min": 0.9812077909366742,
+   "avg": 0.9870607810511892,
+   "max": 0.9929529216012528
+  }
+ },
+ "window_sizes": [
+  {
+   "group": "test_benign",
+   "bucket": "<10",
+   "rows": 1,
+   "rate": 0.0
+  },
+  {
+   "group": "test_benign",
+   "bucket": "10-99",
+   "rows": 88,
+   "rate": 0.0
+  },
+  {
+   "group": "test_benign",
+   "bucket": ">=100",
+   "rows": 104911,
+   "rate": 0.00013154006729513586
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": "<10",
+   "rows": 22,
+   "rate": 0.5909090909090909
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": "10-99",
+   "rows": 1275,
+   "rate": 0.9545098039215686
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": ">=100",
+   "rows": 16164,
+   "rate": 1.0
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": "<10",
+   "rows": 2,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": "10-99",
+   "rows": 129,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": ">=100",
+   "rows": 76116,
+   "rate": 0.00018918492826738137
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": "10-99",
+   "rows": 143,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": ">=100",
+   "rows": 162400,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": "10-99",
+   "rows": 143,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": ">=100",
+   "rows": 162400,
+   "rate": 0.0
+  },
+  {
+   "group": "unseen_tool",
+   "bucket": "<10",
+   "rows": 141,
+   "rate": 0.14184397163120568
+  },
+  {
+   "group": "unseen_tool",
+   "bucket": "10-99",
+   "rows": 4130,
+   "rate": 0.8722033898305085
+  },
+  {
+   "group": "unseen_tool",
+   "bucket": ">=100",
+   "rows": 273984,
+   "rate": 0.9256204741882736
+  },
+  {
+   "group": "unseen_platform",
+   "bucket": "<10",
+   "rows": 16,
+   "rate": 0.0
+  },
+  {
+   "group": "unseen_platform",
+   "bucket": "10-99",
+   "rows": 5781,
+   "rate": 0.9546445251686559
+  },
+  {
+   "group": "unseen_platform",
+   "bucket": ">=100",
+   "rows": 60548,
+   "rate": 0.9983484177842372
+  }
+ ]
+}

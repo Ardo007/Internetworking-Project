@@ -1,0 +1,359 @@
+{
+ "run": "run1_all_50ep",
+ "name": "lofo-dnscat2",
+ "config": "B",
+ "feature_set": "all",
+ "per_run": [
+  {
+   "collapsed": 0.0,
+   "test_benign": null,
+   "test_tunnel": null,
+   "fpr_normal": 3.934581032696368e-05,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "held_out_family": 0.9991775039572923,
+   "held_out_family/dnscat2-cname": 1.0,
+   "held_out_family/dnscat2-mx": 0.9979366994978004,
+   "held_out_family/dnscat2-txt": 1.0
+  },
+  {
+   "collapsed": 0.0,
+   "test_benign": null,
+   "test_tunnel": null,
+   "fpr_normal": 3.934581032696368e-05,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "held_out_family": 0.9996896241348273,
+   "held_out_family/dnscat2-cname": 1.0,
+   "held_out_family/dnscat2-mx": 0.9992213960369059,
+   "held_out_family/dnscat2-txt": 1.0
+  },
+  {
+   "collapsed": 0.0,
+   "test_benign": null,
+   "test_tunnel": null,
+   "fpr_normal": 3.934581032696368e-05,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "held_out_family": 0.9996741053415686,
+   "held_out_family/dnscat2-cname": 1.0,
+   "held_out_family/dnscat2-mx": 0.9991824658387511,
+   "held_out_family/dnscat2-txt": 1.0
+  },
+  {
+   "collapsed": 0.0,
+   "test_benign": null,
+   "test_tunnel": null,
+   "fpr_normal": 3.934581032696368e-05,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "held_out_family": 0.9993016543033614,
+   "held_out_family/dnscat2-cname": 1.0,
+   "held_out_family/dnscat2-mx": 0.9982481410830382,
+   "held_out_family/dnscat2-txt": 1.0
+  },
+  {
+   "collapsed": 0.0,
+   "test_benign": null,
+   "test_tunnel": null,
+   "fpr_normal": 3.934581032696368e-05,
+   "fpr_wildcard": 0.0,
+   "fpr_wildcard_00007_00012": 0.0,
+   "held_out_family": 0.9999068872404482,
+   "held_out_family/dnscat2-cname": 1.0,
+   "held_out_family/dnscat2-mx": 0.9997664188110718,
+   "held_out_family/dnscat2-txt": 1.0
+  }
+ ],
+ "epochs": [
+  29,
+  30,
+  50,
+  50,
+  28
+ ],
+ "histories": null,
+ "input_columns": [
+  "qname_len",
+  "label_count",
+  "max_label_len",
+  "avg_label_len",
+  "first_label_len",
+  "digit_ratio",
+  "hex_ratio",
+  "unique_char_ratio",
+  "entropy",
+  "first_label_entropy",
+  "response_ancount",
+  "response_min_ttl",
+  "response_rcode",
+  "domain_query_count",
+  "domain_unique_qnames",
+  "domain_query_rate",
+  "domain_duration",
+  "domain_unique_subdomain_ratio",
+  "domain_avg_qname_len",
+  "domain_std_qname_len",
+  "domain_avg_entropy",
+  "domain_txt_ratio",
+  "domain_null_ratio",
+  "domain_qtype_diversity",
+  "nxdomain_ratio",
+  "no_response_ratio",
+  "rejected_ratio",
+  "rcode_entropy",
+  "proto_udp",
+  "qtype_name_AAAA",
+  "qtype_name_ANY",
+  "qtype_name_CNAME",
+  "qtype_name_HTTPS",
+  "qtype_name_MX",
+  "qtype_name_NS",
+  "qtype_name_NULL",
+  "qtype_name_OPT",
+  "qtype_name_OTHER",
+  "qtype_name_PTR",
+  "qtype_name_SOA",
+  "qtype_name_SRV",
+  "qtype_name_SVCB",
+  "qtype_name_TXT"
+ ],
+ "train_rows": {
+  "benign": 132514,
+  "tunnel": 65329
+ },
+ "val_rows": {
+  "benign": 18232,
+  "tunnel": 15203
+ },
+ "settings": {
+  "epoch_cap": 50,
+  "hyperparameters": {
+   "n_of_hidden_layers": 1,
+   "n_neurons": 24,
+   "activation": "tanh",
+   "dropout_rate": 0.5,
+   "l2_reg": 0.0001,
+   "epochs": 50,
+   "batch_size": 128,
+   "early_stopping": true
+  },
+  "row_caps": {
+   "default": 200,
+   "wildcard": 1000
+  },
+  "sampling_seed": 0,
+  "window_seconds": 60,
+  "feature_columns": [
+   "proto",
+   "qname_len",
+   "label_count",
+   "max_label_len",
+   "avg_label_len",
+   "first_label_len",
+   "digit_ratio",
+   "hex_ratio",
+   "unique_char_ratio",
+   "entropy",
+   "first_label_entropy",
+   "qtype_name",
+   "response_ancount",
+   "response_min_ttl",
+   "response_rcode",
+   "domain_query_count",
+   "domain_unique_qnames",
+   "domain_query_rate",
+   "domain_duration",
+   "domain_unique_subdomain_ratio",
+   "domain_avg_qname_len",
+   "domain_std_qname_len",
+   "domain_avg_entropy",
+   "domain_txt_ratio",
+   "domain_null_ratio",
+   "domain_qtype_diversity",
+   "nxdomain_ratio",
+   "no_response_ratio",
+   "rejected_ratio",
+   "rcode_entropy"
+  ],
+  "splits_sha256": "0ad16bd5e36bf0a4108bbd541f4005897b8111927c73422af9cbea4f9bfe1282"
+ },
+ "git": {
+  "commit": "baf6543e643c88164dc2bf4f33fc5741da529ca0",
+  "dirty": false
+ },
+ "environment": {
+  "python": "3.13.15",
+  "tensorflow": "2.21.0",
+  "keras": "3.15.1",
+  "numpy": "2.5.3",
+  "pandas": "3.0.5",
+  "scikit-learn": "1.9.1",
+  "platform": "Windows-11-10.0.26200-SP0"
+ },
+ "trained_at": "2026-09-17T21:40:30+00:00",
+ "source": "re-scored from the saved models in `models/zeek_bilstm/<name>/`",
+ "family_rows": 64438,
+ "summary": {
+  "collapsed": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "test_benign": {
+   "min": null,
+   "avg": null,
+   "max": null
+  },
+  "test_tunnel": {
+   "min": null,
+   "avg": null,
+   "max": null
+  },
+  "fpr_normal": {
+   "min": 3.934581032696368e-05,
+   "avg": 3.934581032696368e-05,
+   "max": 3.934581032696368e-05
+  },
+  "fpr_wildcard": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "fpr_wildcard_00007_00012": {
+   "min": 0.0,
+   "avg": 0.0,
+   "max": 0.0
+  },
+  "held_out_family": {
+   "min": 0.9991775039572923,
+   "avg": 0.9995499549954996,
+   "max": 0.9999068872404482
+  },
+  "held_out_family/dnscat2-cname": {
+   "min": 1.0,
+   "avg": 1.0,
+   "max": 1.0
+  },
+  "held_out_family/dnscat2-mx": {
+   "min": 0.9979366994978004,
+   "avg": 0.9988710242535135,
+   "max": 0.9997664188110718
+  },
+  "held_out_family/dnscat2-txt": {
+   "min": 1.0,
+   "avg": 1.0,
+   "max": 1.0
+  }
+ },
+ "window_sizes": [
+  {
+   "group": "test_benign",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "test_benign",
+   "bucket": "10-99",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "test_benign",
+   "bucket": ">=100",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": "10-99",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "test_tunnel",
+   "bucket": ">=100",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": "<10",
+   "rows": 2,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": "10-99",
+   "rows": 129,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_normal",
+   "bucket": ">=100",
+   "rows": 76116,
+   "rate": 3.941352672237112e-05
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": "10-99",
+   "rows": 143,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard",
+   "bucket": ">=100",
+   "rows": 162400,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": "10-99",
+   "rows": 143,
+   "rate": 0.0
+  },
+  {
+   "group": "fpr_wildcard_00007_00012",
+   "bucket": ">=100",
+   "rows": 162400,
+   "rate": 0.0
+  },
+  {
+   "group": "held_out_family",
+   "bucket": "<10",
+   "rows": 0,
+   "rate": null
+  },
+  {
+   "group": "held_out_family",
+   "bucket": "10-99",
+   "rows": 264,
+   "rate": 0.9537878787878789
+  },
+  {
+   "group": "held_out_family",
+   "bucket": ">=100",
+   "rows": 64174,
+   "rate": 0.9997382117368405
+  }
+ ]
+}

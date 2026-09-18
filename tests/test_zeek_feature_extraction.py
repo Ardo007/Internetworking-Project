@@ -131,29 +131,37 @@ def test_identifiers_are_never_features():
     identifiers = {"uid", "qname", "query", "trans_id", "capture_id", "tool", "category",
                    "id.orig_h", "id.orig_p", "id.resp_h", "id.resp_p", "ts", "base_domain",
                    "window_id", "window_start", "window_query_count", "Label"}
-    assert not identifiers & set(zfe.FEATURE_COLUMNS)
-    assert not set(zfe.BOOKKEEPING_COLUMNS) & set(zfe.FEATURE_COLUMNS)
-    assert "response_size" not in zfe.FEATURE_COLUMNS
-    assert "response_latency" not in zfe.FEATURE_COLUMNS
+    assert not identifiers & set(zfe.ALL_FEATURE_COLUMNS)
+    assert not set(zfe.BOOKKEEPING_COLUMNS) & set(zfe.ALL_FEATURE_COLUMNS)
+    assert "response_size" not in zfe.ALL_FEATURE_COLUMNS
+    assert "response_latency" not in zfe.ALL_FEATURE_COLUMNS
 
 
 def test_feature_groups_partition_the_features():
     partition = [c for name, group in zfe.FEATURE_GROUPS.items() if name != "artefact_suspect" for c in group]
-    assert sorted(partition) == sorted(zfe.FEATURE_COLUMNS)
+    assert sorted(partition) == sorted(zfe.ALL_FEATURE_COLUMNS)
     assert len(partition) == len(set(partition))
     assert set(zfe.FEATURE_GROUPS["artefact_suspect"]) == {"domain_qtype_diversity", "no_response_ratio"}
     assert "domain_qtype_diversity" in zfe.FEATURE_GROUPS["domain_shape"]
+    assert "no_response_ratio" in zfe.FEATURE_GROUPS["blackhole"]
     assert "qtype_name" in zfe.FEATURE_GROUPS["lexical"]
+
+
+def test_default_features_leave_out_the_artefact_suspect_pair():
+    assert zfe.FEATURE_COLUMNS == zfe.FEATURE_SETS[zfe.DEFAULT_FEATURE_SET]
+    assert zfe.FEATURE_COLUMNS == [c for c in zfe.ALL_FEATURE_COLUMNS
+                                   if c not in ("domain_qtype_diversity", "no_response_ratio")]
+    assert len(zfe.ALL_FEATURE_COLUMNS) == 30 and len(zfe.FEATURE_COLUMNS) == 28
 
 
 def test_feature_sets():
     sets = zfe.FEATURE_SETS
-    assert sets["all"] == zfe.FEATURE_COLUMNS
+    assert sets["all"] == zfe.ALL_FEATURE_COLUMNS  # run 1's default, kept for reproducibility
     assert sets["lexical_only"] == zfe.FEATURE_GROUPS["lexical"]
     assert set(sets["domain_volume_shape"]) == set(zfe.FEATURE_GROUPS["domain_volume"] + zfe.FEATURE_GROUPS["domain_shape"])
-    assert set(sets["all_minus_artefact_suspect"]) == set(zfe.FEATURE_COLUMNS) - {"domain_qtype_diversity", "no_response_ratio"}
+    assert set(sets["all_minus_artefact_suspect"]) == set(zfe.ALL_FEATURE_COLUMNS) - {"domain_qtype_diversity", "no_response_ratio"}
     for features in sets.values():
-        assert set(features) <= set(zfe.FEATURE_COLUMNS)
+        assert set(features) <= set(zfe.ALL_FEATURE_COLUMNS)
 
 
 # ------------------------------------------------------ escape decoding --
@@ -376,7 +384,7 @@ def test_rcode_entropy_is_zero_without_responses():
 
 def test_aggregates_keep_every_row(capture, aggregated):
     assert len(aggregated) == len(capture)
-    aggregate_columns = [c for c in zfe.FEATURE_COLUMNS if c.startswith("domain_") or c.endswith(("_ratio", "_entropy"))]
+    aggregate_columns = [c for c in zfe.ALL_FEATURE_COLUMNS if c.startswith("domain_") or c.endswith(("_ratio", "_entropy"))]
     assert not aggregated[aggregate_columns].isna().any().any()
 
 
