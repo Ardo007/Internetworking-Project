@@ -1,11 +1,12 @@
 import sys
 from pathlib import Path
 
-# Add project root to sys.path so direct execution works seamlessly
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Add testAndEval/ to sys.path (the metrics module is testAndEval/evaluation/metrics.py)
+# so both pytest and direct execution find it
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import unittest
-from src.evaluation.metrics import calculate_eval_metrics
+from evaluation.metrics import calculate_eval_metrics
 
 class TestEvaluationMetrics(unittest.TestCase):
 

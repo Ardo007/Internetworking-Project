@@ -1,0 +1,263 @@
+config,capture_id,category,tool,family,label,split,role,whole_capture,first_window,last_window,t_start,t_end,t_start_utc,t_end_utc,window_seconds,rule
+A,crossEndPoint/AndIodine-CNAME,crossEndPoint,AndIodine-CNAME,iodine (Android),tunnel,heldout,unseen_platform,True,0,82,1695298020,1695303000,2023-09-21 12:07:00,2023-09-21 13:30:00,60,evaluation only
+A,crossEndPoint/AndIodine-MX,crossEndPoint,AndIodine-MX,iodine (Android),tunnel,heldout,unseen_platform,True,0,62,1695294300,1695298080,2023-09-21 11:05:00,2023-09-21 12:08:00,60,evaluation only
+A,crossEndPoint/AndIodine-NULL,crossEndPoint,AndIodine-NULL,iodine (Android),tunnel,heldout,unseen_platform,True,0,35,1695279540,1695281700,2023-09-21 06:59:00,2023-09-21 07:35:00,60,evaluation only
+A,crossEndPoint/AndIodine-SRV,crossEndPoint,AndIodine-SRV,iodine (Android),tunnel,heldout,unseen_platform,True,0,63,1695290520,1695294360,2023-09-21 10:02:00,2023-09-21 11:06:00,60,evaluation only
+A,crossEndPoint/AndIodine-TXT,crossEndPoint,AndIodine-TXT,iodine (Android),tunnel,heldout,unseen_platform,True,0,140,1695282000,1695290460,2023-09-21 07:40:00,2023-09-21 10:01:00,60,evaluation only
+A,normal/normal_00000_20230805150331,normal,normal,normal,benign,train,fit,True,0,24,1691218980,1691220480,2023-08-05 07:03:00,2023-08-05 07:28:00,60,normal file index 00000-00047
+A,normal/normal_00001_20230805152732,normal,normal,normal,benign,train,fit,True,0,26,1691220420,1691222040,2023-08-05 07:27:00,2023-08-05 07:54:00,60,normal file index 00000-00047
+A,normal/normal_00002_20230805155315,normal,normal,normal,benign,train,fit,True,0,30,1691221980,1691223840,2023-08-05 07:53:00,2023-08-05 08:24:00,60,normal file index 00000-00047
+A,normal/normal_00003_20230805162300,normal,normal,normal,benign,train,fit,True,0,33,1691223780,1691225820,2023-08-05 08:23:00,2023-08-05 08:57:00,60,normal file index 00000-00047
+A,normal/normal_00004_20230805165638,normal,normal,normal,benign,train,fit,True,0,36,1691225760,1691227980,2023-08-05 08:56:00,2023-08-05 09:33:00,60,normal file index 00000-00047
+A,normal/normal_00005_20230805173251,normal,normal,normal,benign,train,fit,True,0,122,1691227920,1691235300,2023-08-05 09:32:00,2023-08-05 11:35:00,60,normal file index 00000-00047
+A,normal/normal_00006_20230805193455,normal,normal,normal,benign,train,fit,True,0,10,1691235240,1691235900,2023-08-05 11:34:00,2023-08-05 11:45:00,60,normal file index 00000-00047
+A,normal/normal_00007_20230805194417,normal,normal,normal,benign,train,fit,True,0,9,1691235840,1691236440,2023-08-05 11:44:00,2023-08-05 11:54:00,60,normal file index 00000-00047
+A,normal/normal_00008_20230805195347,normal,normal,normal,benign,train,fit,True,0,10,1691236380,1691237040,2023-08-05 11:53:00,2023-08-05 12:04:00,60,normal file index 00000-00047
+A,normal/normal_00009_20230805200318,normal,normal,normal,benign,train,fit,True,0,9,1691236980,1691237580,2023-08-05 12:03:00,2023-08-05 12:13:00,60,normal file index 00000-00047
+A,normal/normal_00010_20230805201245,normal,normal,normal,benign,train,fit,True,0,10,1691237520,1691238180,2023-08-05 12:12:00,2023-08-05 12:23:00,60,normal file index 00000-00047
+A,normal/normal_00011_20230805202204,normal,normal,normal,benign,train,fit,True,0,20,1691238120,1691239380,2023-08-05 12:22:00,2023-08-05 12:43:00,60,normal file index 00000-00047
+A,normal/normal_00012_20230805204207,normal,normal,normal,benign,train,fit,True,0,7,1691239320,1691239800,2023-08-05 12:42:00,2023-08-05 12:50:00,60,normal file index 00000-00047
+A,normal/normal_00013_20230805204920,normal,normal,normal,benign,train,fit,True,0,8,1691239740,1691240280,2023-08-05 12:49:00,2023-08-05 12:58:00,60,normal file index 00000-00047
+A,normal/normal_00014_20230805205702,normal,normal,normal,benign,train,fit,True,0,7,1691240220,1691240700,2023-08-05 12:57:00,2023-08-05 13:05:00,60,normal file index 00000-00047
+A,normal/normal_00015_20230805210440,normal,normal,normal,benign,train,fit,True,0,8,1691240640,1691241180,2023-08-05 13:04:00,2023-08-05 13:13:00,60,normal file index 00000-00047
+A,normal/normal_00016_20230805211220,normal,normal,normal,benign,train,fit,True,0,7,1691241120,1691241600,2023-08-05 13:12:00,2023-08-05 13:20:00,60,normal file index 00000-00047
+A,normal/normal_00017_20230805211952,normal,normal,normal,benign,train,fit,True,0,8,1691241540,1691242080,2023-08-05 13:19:00,2023-08-05 13:28:00,60,normal file index 00000-00047
+A,normal/normal_00018_20230805212730,normal,normal,normal,benign,train,fit,True,0,16,1691242020,1691243040,2023-08-05 13:27:00,2023-08-05 13:44:00,60,normal file index 00000-00047
+A,normal/normal_00019_20230805214304,normal,normal,normal,benign,train,fit,True,0,7,1691242980,1691243460,2023-08-05 13:43:00,2023-08-05 13:51:00,60,normal file index 00000-00047
+A,normal/normal_00020_20230805215042,normal,normal,normal,benign,train,fit,True,0,8,1691243400,1691243940,2023-08-05 13:50:00,2023-08-05 13:59:00,60,normal file index 00000-00047
+A,normal/normal_00021_20230805215807,normal,normal,normal,benign,train,fit,True,0,7,1691243880,1691244360,2023-08-05 13:58:00,2023-08-05 14:06:00,60,normal file index 00000-00047
+A,normal/normal_00022_20230805220555,normal,normal,normal,benign,train,fit,True,0,8,1691244300,1691244840,2023-08-05 14:05:00,2023-08-05 14:14:00,60,normal file index 00000-00047
+A,normal/normal_00023_20230805221350,normal,normal,normal,benign,train,fit,True,0,8,1691244780,1691245320,2023-08-05 14:13:00,2023-08-05 14:22:00,60,normal file index 00000-00047
+A,normal/normal_00024_20230805222144,normal,normal,normal,benign,train,fit,True,0,8,1691245260,1691245800,2023-08-05 14:21:00,2023-08-05 14:30:00,60,normal file index 00000-00047
+A,normal/normal_00025_20230805222942,normal,normal,normal,benign,train,fit,True,0,680,1691245740,1691286600,2023-08-05 14:29:00,2023-08-06 01:50:00,60,normal file index 00000-00047
+A,normal/normal_00026_20230806094925,normal,normal,normal,benign,train,fit,True,0,7,1691286540,1691287020,2023-08-06 01:49:00,2023-08-06 01:57:00,60,normal file index 00000-00047
+A,normal/normal_00027_20230806095642,normal,normal,normal,benign,train,fit,True,0,8,1691286960,1691287500,2023-08-06 01:56:00,2023-08-06 02:05:00,60,normal file index 00000-00047
+A,normal/normal_00028_20230806100400,normal,normal,normal,benign,train,fit,True,0,7,1691287440,1691287920,2023-08-06 02:04:00,2023-08-06 02:12:00,60,normal file index 00000-00047
+A,normal/normal_00029_20230806101125,normal,normal,normal,benign,train,fit,True,0,7,1691287860,1691288340,2023-08-06 02:11:00,2023-08-06 02:19:00,60,normal file index 00000-00047
+A,normal/normal_00030_20230806101852,normal,normal,normal,benign,train,fit,True,0,8,1691288280,1691288820,2023-08-06 02:18:00,2023-08-06 02:27:00,60,normal file index 00000-00047
+A,normal/normal_00031_20230806102617,normal,normal,normal,benign,train,fit,True,0,7,1691288760,1691289240,2023-08-06 02:26:00,2023-08-06 02:34:00,60,normal file index 00000-00047
+A,normal/normal_00032_20230806103352,normal,normal,normal,benign,train,fit,True,0,13,1691289180,1691290020,2023-08-06 02:33:00,2023-08-06 02:47:00,60,normal file index 00000-00047
+A,normal/normal_00033_20230806104653,normal,normal,normal,benign,train,fit,True,0,8,1691289960,1691290500,2023-08-06 02:46:00,2023-08-06 02:55:00,60,normal file index 00000-00047
+A,normal/normal_00034_20230806105420,normal,normal,normal,benign,train,fit,True,0,7,1691290440,1691290920,2023-08-06 02:54:00,2023-08-06 03:02:00,60,normal file index 00000-00047
+A,normal/normal_00035_20230806110151,normal,normal,normal,benign,train,fit,True,0,8,1691290860,1691291400,2023-08-06 03:01:00,2023-08-06 03:10:00,60,normal file index 00000-00047
+A,normal/normal_00036_20230806110924,normal,normal,normal,benign,train,fit,True,0,7,1691291340,1691291820,2023-08-06 03:09:00,2023-08-06 03:17:00,60,normal file index 00000-00047
+A,normal/normal_00037_20230806111651,normal,normal,normal,benign,train,fit,True,0,8,1691291760,1691292300,2023-08-06 03:16:00,2023-08-06 03:25:00,60,normal file index 00000-00047
+A,normal/normal_00038_20230806112421,normal,normal,normal,benign,train,fit,True,0,7,1691292240,1691292720,2023-08-06 03:24:00,2023-08-06 03:32:00,60,normal file index 00000-00047
+A,normal/normal_00039_20230806113145,normal,normal,normal,benign,train,fit,True,0,10,1691292660,1691293320,2023-08-06 03:31:00,2023-08-06 03:42:00,60,normal file index 00000-00047
+A,normal/normal_00040_20230806114153,normal,normal,normal,benign,train,fit,True,0,8,1691293260,1691293800,2023-08-06 03:41:00,2023-08-06 03:50:00,60,normal file index 00000-00047
+A,normal/normal_00041_20230806114902,normal,normal,normal,benign,train,fit,True,0,6,1691293740,1691294160,2023-08-06 03:49:00,2023-08-06 03:56:00,60,normal file index 00000-00047
+A,normal/normal_00042_20230806115543,normal,normal,normal,benign,train,fit,True,0,7,1691294100,1691294580,2023-08-06 03:55:00,2023-08-06 04:03:00,60,normal file index 00000-00047
+A,normal/normal_00043_20230806120251,normal,normal,normal,benign,train,fit,True,0,8,1691294520,1691295060,2023-08-06 04:02:00,2023-08-06 04:11:00,60,normal file index 00000-00047
+A,normal/normal_00044_20230806121012,normal,normal,normal,benign,train,fit,True,0,7,1691295000,1691295480,2023-08-06 04:10:00,2023-08-06 04:18:00,60,normal file index 00000-00047
+A,normal/normal_00045_20230806121741,normal,normal,normal,benign,train,fit,True,0,8,1691295420,1691295960,2023-08-06 04:17:00,2023-08-06 04:26:00,60,normal file index 00000-00047
+A,normal/normal_00046_20230806122528,normal,normal,normal,benign,train,fit,True,0,13,1691295900,1691296740,2023-08-06 04:25:00,2023-08-06 04:39:00,60,normal file index 00000-00047
+A,normal/normal_00047_20230806123846,normal,normal,normal,benign,train,fit,True,0,8,1691296680,1691297220,2023-08-06 04:38:00,2023-08-06 04:47:00,60,normal file index 00000-00047
+A,normal/normal_00048_20230806124619,normal,normal,normal,benign,val,model_selection,True,0,7,1691297160,1691297640,2023-08-06 04:46:00,2023-08-06 04:54:00,60,normal file index 00048-00054
+A,normal/normal_00049_20230806125329,normal,normal,normal,benign,val,model_selection,True,0,7,1691297580,1691298060,2023-08-06 04:53:00,2023-08-06 05:01:00,60,normal file index 00048-00054
+A,normal/normal_00050_20230806130025,normal,normal,normal,benign,val,model_selection,True,0,7,1691298000,1691298480,2023-08-06 05:00:00,2023-08-06 05:08:00,60,normal file index 00048-00054
+A,normal/normal_00051_20230806130724,normal,normal,normal,benign,val,model_selection,True,0,7,1691298420,1691298900,2023-08-06 05:07:00,2023-08-06 05:15:00,60,normal file index 00048-00054
+A,normal/normal_00052_20230806131440,normal,normal,normal,benign,val,model_selection,True,0,8,1691298840,1691299380,2023-08-06 05:14:00,2023-08-06 05:23:00,60,normal file index 00048-00054
+A,normal/normal_00053_20230806132202,normal,normal,normal,benign,val,model_selection,True,0,10,1691299320,1691299980,2023-08-06 05:22:00,2023-08-06 05:33:00,60,normal file index 00048-00054
+A,normal/normal_00054_20230806133254,normal,normal,normal,benign,val,model_selection,True,0,8,1691299920,1691300460,2023-08-06 05:32:00,2023-08-06 05:41:00,60,normal file index 00048-00054
+A,normal/normal_00055_20230806134019,normal,normal,normal,benign,test,in_distribution_test,True,0,7,1691300400,1691300880,2023-08-06 05:40:00,2023-08-06 05:48:00,60,normal file index 00055-00061
+A,normal/normal_00056_20230806134743,normal,normal,normal,benign,test,in_distribution_test,True,0,8,1691300820,1691301360,2023-08-06 05:47:00,2023-08-06 05:56:00,60,normal file index 00055-00061
+A,normal/normal_00057_20230806135504,normal,normal,normal,benign,test,in_distribution_test,True,0,8,1691301300,1691301840,2023-08-06 05:55:00,2023-08-06 06:04:00,60,normal file index 00055-00061
+A,normal/normal_00058_20230806140330,normal,normal,normal,benign,test,in_distribution_test,True,0,9,1691301780,1691302380,2023-08-06 06:03:00,2023-08-06 06:13:00,60,normal file index 00055-00061
+A,normal/normal_00059_20230806141220,normal,normal,normal,benign,test,in_distribution_test,True,0,9,1691302320,1691302920,2023-08-06 06:12:00,2023-08-06 06:22:00,60,normal file index 00055-00061
+A,normal/normal_00060_20230806142107,normal,normal,normal,benign,test,in_distribution_test,True,0,13,1691302860,1691303700,2023-08-06 06:21:00,2023-08-06 06:35:00,60,normal file index 00055-00061
+A,normal/normal_00061_20230806143445,normal,normal,normal,benign,test,in_distribution_test,True,0,8,1691303640,1691304180,2023-08-06 06:34:00,2023-08-06 06:43:00,60,normal file index 00055-00061
+A,normal/normal_00062_20230806144212,normal,normal,normal,benign,heldout,fpr_normal,True,0,7,1691304120,1691304600,2023-08-06 06:42:00,2023-08-06 06:50:00,60,normal file index 00062-00067
+A,normal/normal_00063_20230806144951,normal,normal,normal,benign,heldout,fpr_normal,True,0,8,1691304540,1691305080,2023-08-06 06:49:00,2023-08-06 06:58:00,60,normal file index 00062-00067
+A,normal/normal_00064_20230806145733,normal,normal,normal,benign,heldout,fpr_normal,True,0,8,1691305020,1691305560,2023-08-06 06:57:00,2023-08-06 07:06:00,60,normal file index 00062-00067
+A,normal/normal_00065_20230806150519,normal,normal,normal,benign,heldout,fpr_normal,True,0,8,1691305500,1691306040,2023-08-06 07:05:00,2023-08-06 07:14:00,60,normal file index 00062-00067
+A,normal/normal_00066_20230806151305,normal,normal,normal,benign,heldout,fpr_normal,True,0,15,1691305980,1691306940,2023-08-06 07:13:00,2023-08-06 07:29:00,60,normal file index 00062-00067
+A,normal/normal_00067_20230806152800,normal,normal,normal,benign,heldout,fpr_normal,True,0,1,1691306880,1691307000,2023-08-06 07:28:00,2023-08-06 07:30:00,60,normal file index 00062-00067
+A,tunnel/DNS-shell,tunnel,DNS-shell,DNS-shell,tunnel,train,fit,False,0,75,1693881900,1693886460,2023-09-05 02:45:00,2023-09-05 04:01:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/DNS-shell,tunnel,DNS-shell,DNS-shell,tunnel,val,model_selection,False,77,92,1693886520,1693887480,2023-09-05 04:02:00,2023-09-05 04:18:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/DNS-shell,tunnel,DNS-shell,DNS-shell,tunnel,test,in_distribution_test,False,94,110,1693887540,1693888560,2023-09-05 04:19:00,2023-09-05 04:36:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnscat2-cname,tunnel,dnscat2-cname,dnscat2,tunnel,train,fit,False,0,63,1693727760,1693731600,2023-09-03 07:56:00,2023-09-03 09:00:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnscat2-cname,tunnel,dnscat2-cname,dnscat2,tunnel,val,model_selection,False,65,78,1693731660,1693732500,2023-09-03 09:01:00,2023-09-03 09:15:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnscat2-cname,tunnel,dnscat2-cname,dnscat2,tunnel,test,in_distribution_test,False,80,93,1693732560,1693733400,2023-09-03 09:16:00,2023-09-03 09:30:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnscat2-mx,tunnel,dnscat2-mx,dnscat2,tunnel,train,fit,False,0,99,1693738500,1693744500,2023-09-03 10:55:00,2023-09-03 12:35:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnscat2-mx,tunnel,dnscat2-mx,dnscat2,tunnel,val,model_selection,False,101,121,1693744560,1693745820,2023-09-03 12:36:00,2023-09-03 12:57:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnscat2-mx,tunnel,dnscat2-mx,dnscat2,tunnel,test,in_distribution_test,False,123,144,1693745880,1693747200,2023-09-03 12:58:00,2023-09-03 13:20:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnscat2-txt,tunnel,dnscat2-txt,dnscat2,tunnel,train,fit,False,0,54,1693733460,1693736760,2023-09-03 09:31:00,2023-09-03 10:26:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnscat2-txt,tunnel,dnscat2-txt,dnscat2,tunnel,val,model_selection,False,56,67,1693736820,1693737540,2023-09-03 10:27:00,2023-09-03 10:39:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnscat2-txt,tunnel,dnscat2-txt,dnscat2,tunnel,test,in_distribution_test,False,69,80,1693737600,1693738320,2023-09-03 10:40:00,2023-09-03 10:52:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnspot,tunnel,dnspot,dnspot,tunnel,train,fit,False,0,82,1694246340,1694251320,2023-09-09 07:59:00,2023-09-09 09:22:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnspot,tunnel,dnspot,dnspot,tunnel,val,model_selection,False,84,101,1694251380,1694252460,2023-09-09 09:23:00,2023-09-09 09:41:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/dnspot,tunnel,dnspot,dnspot,tunnel,test,in_distribution_test,False,103,120,1694252520,1694253600,2023-09-09 09:42:00,2023-09-09 10:00:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-NULL,tunnel,iodine-NULL,iodine,tunnel,train,fit,False,0,26,1693707120,1693708740,2023-09-03 02:12:00,2023-09-03 02:39:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-NULL,tunnel,iodine-NULL,iodine,tunnel,val,model_selection,False,28,33,1693708800,1693709160,2023-09-03 02:40:00,2023-09-03 02:46:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-NULL,tunnel,iodine-NULL,iodine,tunnel,test,in_distribution_test,False,35,39,1693709220,1693709520,2023-09-03 02:47:00,2023-09-03 02:52:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-a,tunnel,iodine-a,iodine,tunnel,train,fit,False,0,30,1693792200,1693794060,2023-09-04 01:50:00,2023-09-04 02:21:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-a,tunnel,iodine-a,iodine,tunnel,val,model_selection,False,32,38,1693794120,1693794540,2023-09-04 02:22:00,2023-09-04 02:29:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-a,tunnel,iodine-a,iodine,tunnel,test,in_distribution_test,False,40,46,1693794600,1693795020,2023-09-04 02:30:00,2023-09-04 02:37:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-cname,tunnel,iodine-cname,iodine,tunnel,train,fit,False,0,40,1693788600,1693791060,2023-09-04 00:50:00,2023-09-04 01:31:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-cname,tunnel,iodine-cname,iodine,tunnel,val,model_selection,False,42,50,1693791120,1693791660,2023-09-04 01:32:00,2023-09-04 01:41:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-cname,tunnel,iodine-cname,iodine,tunnel,test,in_distribution_test,False,52,60,1693791720,1693792260,2023-09-04 01:42:00,2023-09-04 01:51:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-mx,tunnel,iodine-mx,iodine,tunnel,train,fit,False,0,42,1693751580,1693754160,2023-09-03 14:33:00,2023-09-03 15:16:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-mx,tunnel,iodine-mx,iodine,tunnel,val,model_selection,False,44,52,1693754220,1693754760,2023-09-03 15:17:00,2023-09-03 15:26:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-mx,tunnel,iodine-mx,iodine,tunnel,test,in_distribution_test,False,54,63,1693754820,1693755420,2023-09-03 15:27:00,2023-09-03 15:37:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-private,tunnel,iodine-private,iodine,tunnel,train,fit,False,0,17,1693715280,1693716360,2023-09-03 04:28:00,2023-09-03 04:46:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-private,tunnel,iodine-private,iodine,tunnel,val,model_selection,False,19,22,1693716420,1693716660,2023-09-03 04:47:00,2023-09-03 04:51:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-private,tunnel,iodine-private,iodine,tunnel,test,in_distribution_test,False,24,26,1693716720,1693716900,2023-09-03 04:52:00,2023-09-03 04:55:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-srv,tunnel,iodine-srv,iodine,tunnel,train,fit,False,0,30,1693747500,1693749360,2023-09-03 13:25:00,2023-09-03 13:56:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-srv,tunnel,iodine-srv,iodine,tunnel,val,model_selection,False,32,38,1693749420,1693749840,2023-09-03 13:57:00,2023-09-03 14:04:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-srv,tunnel,iodine-srv,iodine,tunnel,test,in_distribution_test,False,40,45,1693749900,1693750260,2023-09-03 14:05:00,2023-09-03 14:11:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-txt,tunnel,iodine-txt,iodine,tunnel,train,fit,False,0,22,1693716960,1693718340,2023-09-03 04:56:00,2023-09-03 05:19:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-txt,tunnel,iodine-txt,iodine,tunnel,val,model_selection,False,24,28,1693718400,1693718700,2023-09-03 05:20:00,2023-09-03 05:25:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/iodine-txt,tunnel,iodine-txt,iodine,tunnel,test,in_distribution_test,False,30,34,1693718760,1693719060,2023-09-03 05:26:00,2023-09-03 05:31:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/tuns,tunnel,tuns,tuns,tunnel,train,fit,False,0,70,1693823460,1693827720,2023-09-04 10:31:00,2023-09-04 11:42:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/tuns,tunnel,tuns,tuns,tunnel,val,model_selection,False,72,86,1693827780,1693828680,2023-09-04 11:43:00,2023-09-04 11:58:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,tunnel/tuns,tunnel,tuns,tuns,tunnel,test,in_distribution_test,False,88,103,1693828740,1693829700,2023-09-04 11:59:00,2023-09-04 12:15:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+A,unknownTunnel/cobalstrike,unknownTunnel,cobalstrike,cobalstrike,tunnel,heldout,unseen_tool,True,0,133,1693888920,1693896960,2023-09-05 04:42:00,2023-09-05 06:56:00,60,evaluation only
+A,unknownTunnel/dns2tcp-key,unknownTunnel,dns2tcp-key,dns2tcp-key,tunnel,heldout,unseen_tool,True,0,192,1693869420,1693881000,2023-09-04 23:17:00,2023-09-05 02:30:00,60,evaluation only
+A,unknownTunnel/dns2tcp-txt,unknownTunnel,dns2tcp-txt,dns2tcp-txt,tunnel,heldout,unseen_tool,True,0,53,1693831920,1693835160,2023-09-04 12:52:00,2023-09-04 13:46:00,60,evaluation only
+A,unknownTunnel/ozymandns,unknownTunnel,ozymandns,ozymandns,tunnel,heldout,unseen_tool,True,0,44,1693820700,1693823400,2023-09-04 09:45:00,2023-09-04 10:30:00,60,evaluation only
+A,unknownTunnel/tcp-over-dns-CNAME,unknownTunnel,tcp-over-dns-CNAME,tcp-over-dns-CNAME,tunnel,heldout,unseen_tool,True,0,269,1693804380,1693820580,2023-09-04 05:13:00,2023-09-04 09:43:00,60,evaluation only
+A,unknownTunnel/tcp-over-dns-TXT,unknownTunnel,tcp-over-dns-TXT,tcp-over-dns-TXT,tunnel,heldout,unseen_tool,True,0,131,1693796400,1693804320,2023-09-04 03:00:00,2023-09-04 05:12:00,60,evaluation only
+A,wildcard/wildcard_00000_20231011215521,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,2,1697032500,1697032680,2023-10-11 13:55:00,2023-10-11 13:58:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00001_20231011215715,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,6,1697032620,1697033040,2023-10-11 13:57:00,2023-10-11 14:04:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00002_20231011220330,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,5,1697032980,1697033340,2023-10-11 14:03:00,2023-10-11 14:09:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00003_20231011220812,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,3,1697033280,1697033520,2023-10-11 14:08:00,2023-10-11 14:12:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00004_20231011221109,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,2,1697033460,1697033640,2023-10-11 14:11:00,2023-10-11 14:14:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00005_20231011221350,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,4,1697033580,1697033880,2023-10-11 14:13:00,2023-10-11 14:18:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00006_20231011221701,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,0,1697033820,1697033880,2023-10-11 14:17:00,2023-10-11 14:18:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00007_20231011221737,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,5,1697033820,1697034180,2023-10-11 14:17:00,2023-10-11 14:23:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00008_20231011222232,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,6,1697034120,1697034540,2023-10-11 14:22:00,2023-10-11 14:29:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00009_20231011222825,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,1,1697034480,1697034600,2023-10-11 14:28:00,2023-10-11 14:30:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00010_20231011222958,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,4,1697034540,1697034840,2023-10-11 14:29:00,2023-10-11 14:34:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00011_20231011223332,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,5,1697034780,1697035140,2023-10-11 14:33:00,2023-10-11 14:39:00,60,wildcard config A file index 00000-00012
+A,wildcard/wildcard_00012_20231011223819,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,17,1697035080,1697036160,2023-10-11 14:38:00,2023-10-11 14:56:00,60,wildcard config A file index 00000-00012
+B,crossEndPoint/AndIodine-CNAME,crossEndPoint,AndIodine-CNAME,iodine (Android),tunnel,heldout,unseen_platform,True,0,82,1695298020,1695303000,2023-09-21 12:07:00,2023-09-21 13:30:00,60,evaluation only
+B,crossEndPoint/AndIodine-MX,crossEndPoint,AndIodine-MX,iodine (Android),tunnel,heldout,unseen_platform,True,0,62,1695294300,1695298080,2023-09-21 11:05:00,2023-09-21 12:08:00,60,evaluation only
+B,crossEndPoint/AndIodine-NULL,crossEndPoint,AndIodine-NULL,iodine (Android),tunnel,heldout,unseen_platform,True,0,35,1695279540,1695281700,2023-09-21 06:59:00,2023-09-21 07:35:00,60,evaluation only
+B,crossEndPoint/AndIodine-SRV,crossEndPoint,AndIodine-SRV,iodine (Android),tunnel,heldout,unseen_platform,True,0,63,1695290520,1695294360,2023-09-21 10:02:00,2023-09-21 11:06:00,60,evaluation only
+B,crossEndPoint/AndIodine-TXT,crossEndPoint,AndIodine-TXT,iodine (Android),tunnel,heldout,unseen_platform,True,0,140,1695282000,1695290460,2023-09-21 07:40:00,2023-09-21 10:01:00,60,evaluation only
+B,normal/normal_00000_20230805150331,normal,normal,normal,benign,train,fit,True,0,24,1691218980,1691220480,2023-08-05 07:03:00,2023-08-05 07:28:00,60,normal file index 00000-00047
+B,normal/normal_00001_20230805152732,normal,normal,normal,benign,train,fit,True,0,26,1691220420,1691222040,2023-08-05 07:27:00,2023-08-05 07:54:00,60,normal file index 00000-00047
+B,normal/normal_00002_20230805155315,normal,normal,normal,benign,train,fit,True,0,30,1691221980,1691223840,2023-08-05 07:53:00,2023-08-05 08:24:00,60,normal file index 00000-00047
+B,normal/normal_00003_20230805162300,normal,normal,normal,benign,train,fit,True,0,33,1691223780,1691225820,2023-08-05 08:23:00,2023-08-05 08:57:00,60,normal file index 00000-00047
+B,normal/normal_00004_20230805165638,normal,normal,normal,benign,train,fit,True,0,36,1691225760,1691227980,2023-08-05 08:56:00,2023-08-05 09:33:00,60,normal file index 00000-00047
+B,normal/normal_00005_20230805173251,normal,normal,normal,benign,train,fit,True,0,122,1691227920,1691235300,2023-08-05 09:32:00,2023-08-05 11:35:00,60,normal file index 00000-00047
+B,normal/normal_00006_20230805193455,normal,normal,normal,benign,train,fit,True,0,10,1691235240,1691235900,2023-08-05 11:34:00,2023-08-05 11:45:00,60,normal file index 00000-00047
+B,normal/normal_00007_20230805194417,normal,normal,normal,benign,train,fit,True,0,9,1691235840,1691236440,2023-08-05 11:44:00,2023-08-05 11:54:00,60,normal file index 00000-00047
+B,normal/normal_00008_20230805195347,normal,normal,normal,benign,train,fit,True,0,10,1691236380,1691237040,2023-08-05 11:53:00,2023-08-05 12:04:00,60,normal file index 00000-00047
+B,normal/normal_00009_20230805200318,normal,normal,normal,benign,train,fit,True,0,9,1691236980,1691237580,2023-08-05 12:03:00,2023-08-05 12:13:00,60,normal file index 00000-00047
+B,normal/normal_00010_20230805201245,normal,normal,normal,benign,train,fit,True,0,10,1691237520,1691238180,2023-08-05 12:12:00,2023-08-05 12:23:00,60,normal file index 00000-00047
+B,normal/normal_00011_20230805202204,normal,normal,normal,benign,train,fit,True,0,20,1691238120,1691239380,2023-08-05 12:22:00,2023-08-05 12:43:00,60,normal file index 00000-00047
+B,normal/normal_00012_20230805204207,normal,normal,normal,benign,train,fit,True,0,7,1691239320,1691239800,2023-08-05 12:42:00,2023-08-05 12:50:00,60,normal file index 00000-00047
+B,normal/normal_00013_20230805204920,normal,normal,normal,benign,train,fit,True,0,8,1691239740,1691240280,2023-08-05 12:49:00,2023-08-05 12:58:00,60,normal file index 00000-00047
+B,normal/normal_00014_20230805205702,normal,normal,normal,benign,train,fit,True,0,7,1691240220,1691240700,2023-08-05 12:57:00,2023-08-05 13:05:00,60,normal file index 00000-00047
+B,normal/normal_00015_20230805210440,normal,normal,normal,benign,train,fit,True,0,8,1691240640,1691241180,2023-08-05 13:04:00,2023-08-05 13:13:00,60,normal file index 00000-00047
+B,normal/normal_00016_20230805211220,normal,normal,normal,benign,train,fit,True,0,7,1691241120,1691241600,2023-08-05 13:12:00,2023-08-05 13:20:00,60,normal file index 00000-00047
+B,normal/normal_00017_20230805211952,normal,normal,normal,benign,train,fit,True,0,8,1691241540,1691242080,2023-08-05 13:19:00,2023-08-05 13:28:00,60,normal file index 00000-00047
+B,normal/normal_00018_20230805212730,normal,normal,normal,benign,train,fit,True,0,16,1691242020,1691243040,2023-08-05 13:27:00,2023-08-05 13:44:00,60,normal file index 00000-00047
+B,normal/normal_00019_20230805214304,normal,normal,normal,benign,train,fit,True,0,7,1691242980,1691243460,2023-08-05 13:43:00,2023-08-05 13:51:00,60,normal file index 00000-00047
+B,normal/normal_00020_20230805215042,normal,normal,normal,benign,train,fit,True,0,8,1691243400,1691243940,2023-08-05 13:50:00,2023-08-05 13:59:00,60,normal file index 00000-00047
+B,normal/normal_00021_20230805215807,normal,normal,normal,benign,train,fit,True,0,7,1691243880,1691244360,2023-08-05 13:58:00,2023-08-05 14:06:00,60,normal file index 00000-00047
+B,normal/normal_00022_20230805220555,normal,normal,normal,benign,train,fit,True,0,8,1691244300,1691244840,2023-08-05 14:05:00,2023-08-05 14:14:00,60,normal file index 00000-00047
+B,normal/normal_00023_20230805221350,normal,normal,normal,benign,train,fit,True,0,8,1691244780,1691245320,2023-08-05 14:13:00,2023-08-05 14:22:00,60,normal file index 00000-00047
+B,normal/normal_00024_20230805222144,normal,normal,normal,benign,train,fit,True,0,8,1691245260,1691245800,2023-08-05 14:21:00,2023-08-05 14:30:00,60,normal file index 00000-00047
+B,normal/normal_00025_20230805222942,normal,normal,normal,benign,train,fit,True,0,680,1691245740,1691286600,2023-08-05 14:29:00,2023-08-06 01:50:00,60,normal file index 00000-00047
+B,normal/normal_00026_20230806094925,normal,normal,normal,benign,train,fit,True,0,7,1691286540,1691287020,2023-08-06 01:49:00,2023-08-06 01:57:00,60,normal file index 00000-00047
+B,normal/normal_00027_20230806095642,normal,normal,normal,benign,train,fit,True,0,8,1691286960,1691287500,2023-08-06 01:56:00,2023-08-06 02:05:00,60,normal file index 00000-00047
+B,normal/normal_00028_20230806100400,normal,normal,normal,benign,train,fit,True,0,7,1691287440,1691287920,2023-08-06 02:04:00,2023-08-06 02:12:00,60,normal file index 00000-00047
+B,normal/normal_00029_20230806101125,normal,normal,normal,benign,train,fit,True,0,7,1691287860,1691288340,2023-08-06 02:11:00,2023-08-06 02:19:00,60,normal file index 00000-00047
+B,normal/normal_00030_20230806101852,normal,normal,normal,benign,train,fit,True,0,8,1691288280,1691288820,2023-08-06 02:18:00,2023-08-06 02:27:00,60,normal file index 00000-00047
+B,normal/normal_00031_20230806102617,normal,normal,normal,benign,train,fit,True,0,7,1691288760,1691289240,2023-08-06 02:26:00,2023-08-06 02:34:00,60,normal file index 00000-00047
+B,normal/normal_00032_20230806103352,normal,normal,normal,benign,train,fit,True,0,13,1691289180,1691290020,2023-08-06 02:33:00,2023-08-06 02:47:00,60,normal file index 00000-00047
+B,normal/normal_00033_20230806104653,normal,normal,normal,benign,train,fit,True,0,8,1691289960,1691290500,2023-08-06 02:46:00,2023-08-06 02:55:00,60,normal file index 00000-00047
+B,normal/normal_00034_20230806105420,normal,normal,normal,benign,train,fit,True,0,7,1691290440,1691290920,2023-08-06 02:54:00,2023-08-06 03:02:00,60,normal file index 00000-00047
+B,normal/normal_00035_20230806110151,normal,normal,normal,benign,train,fit,True,0,8,1691290860,1691291400,2023-08-06 03:01:00,2023-08-06 03:10:00,60,normal file index 00000-00047
+B,normal/normal_00036_20230806110924,normal,normal,normal,benign,train,fit,True,0,7,1691291340,1691291820,2023-08-06 03:09:00,2023-08-06 03:17:00,60,normal file index 00000-00047
+B,normal/normal_00037_20230806111651,normal,normal,normal,benign,train,fit,True,0,8,1691291760,1691292300,2023-08-06 03:16:00,2023-08-06 03:25:00,60,normal file index 00000-00047
+B,normal/normal_00038_20230806112421,normal,normal,normal,benign,train,fit,True,0,7,1691292240,1691292720,2023-08-06 03:24:00,2023-08-06 03:32:00,60,normal file index 00000-00047
+B,normal/normal_00039_20230806113145,normal,normal,normal,benign,train,fit,True,0,10,1691292660,1691293320,2023-08-06 03:31:00,2023-08-06 03:42:00,60,normal file index 00000-00047
+B,normal/normal_00040_20230806114153,normal,normal,normal,benign,train,fit,True,0,8,1691293260,1691293800,2023-08-06 03:41:00,2023-08-06 03:50:00,60,normal file index 00000-00047
+B,normal/normal_00041_20230806114902,normal,normal,normal,benign,train,fit,True,0,6,1691293740,1691294160,2023-08-06 03:49:00,2023-08-06 03:56:00,60,normal file index 00000-00047
+B,normal/normal_00042_20230806115543,normal,normal,normal,benign,train,fit,True,0,7,1691294100,1691294580,2023-08-06 03:55:00,2023-08-06 04:03:00,60,normal file index 00000-00047
+B,normal/normal_00043_20230806120251,normal,normal,normal,benign,train,fit,True,0,8,1691294520,1691295060,2023-08-06 04:02:00,2023-08-06 04:11:00,60,normal file index 00000-00047
+B,normal/normal_00044_20230806121012,normal,normal,normal,benign,train,fit,True,0,7,1691295000,1691295480,2023-08-06 04:10:00,2023-08-06 04:18:00,60,normal file index 00000-00047
+B,normal/normal_00045_20230806121741,normal,normal,normal,benign,train,fit,True,0,8,1691295420,1691295960,2023-08-06 04:17:00,2023-08-06 04:26:00,60,normal file index 00000-00047
+B,normal/normal_00046_20230806122528,normal,normal,normal,benign,train,fit,True,0,13,1691295900,1691296740,2023-08-06 04:25:00,2023-08-06 04:39:00,60,normal file index 00000-00047
+B,normal/normal_00047_20230806123846,normal,normal,normal,benign,train,fit,True,0,8,1691296680,1691297220,2023-08-06 04:38:00,2023-08-06 04:47:00,60,normal file index 00000-00047
+B,normal/normal_00048_20230806124619,normal,normal,normal,benign,val,model_selection,True,0,7,1691297160,1691297640,2023-08-06 04:46:00,2023-08-06 04:54:00,60,normal file index 00048-00054
+B,normal/normal_00049_20230806125329,normal,normal,normal,benign,val,model_selection,True,0,7,1691297580,1691298060,2023-08-06 04:53:00,2023-08-06 05:01:00,60,normal file index 00048-00054
+B,normal/normal_00050_20230806130025,normal,normal,normal,benign,val,model_selection,True,0,7,1691298000,1691298480,2023-08-06 05:00:00,2023-08-06 05:08:00,60,normal file index 00048-00054
+B,normal/normal_00051_20230806130724,normal,normal,normal,benign,val,model_selection,True,0,7,1691298420,1691298900,2023-08-06 05:07:00,2023-08-06 05:15:00,60,normal file index 00048-00054
+B,normal/normal_00052_20230806131440,normal,normal,normal,benign,val,model_selection,True,0,8,1691298840,1691299380,2023-08-06 05:14:00,2023-08-06 05:23:00,60,normal file index 00048-00054
+B,normal/normal_00053_20230806132202,normal,normal,normal,benign,val,model_selection,True,0,10,1691299320,1691299980,2023-08-06 05:22:00,2023-08-06 05:33:00,60,normal file index 00048-00054
+B,normal/normal_00054_20230806133254,normal,normal,normal,benign,val,model_selection,True,0,8,1691299920,1691300460,2023-08-06 05:32:00,2023-08-06 05:41:00,60,normal file index 00048-00054
+B,normal/normal_00055_20230806134019,normal,normal,normal,benign,test,in_distribution_test,True,0,7,1691300400,1691300880,2023-08-06 05:40:00,2023-08-06 05:48:00,60,normal file index 00055-00061
+B,normal/normal_00056_20230806134743,normal,normal,normal,benign,test,in_distribution_test,True,0,8,1691300820,1691301360,2023-08-06 05:47:00,2023-08-06 05:56:00,60,normal file index 00055-00061
+B,normal/normal_00057_20230806135504,normal,normal,normal,benign,test,in_distribution_test,True,0,8,1691301300,1691301840,2023-08-06 05:55:00,2023-08-06 06:04:00,60,normal file index 00055-00061
+B,normal/normal_00058_20230806140330,normal,normal,normal,benign,test,in_distribution_test,True,0,9,1691301780,1691302380,2023-08-06 06:03:00,2023-08-06 06:13:00,60,normal file index 00055-00061
+B,normal/normal_00059_20230806141220,normal,normal,normal,benign,test,in_distribution_test,True,0,9,1691302320,1691302920,2023-08-06 06:12:00,2023-08-06 06:22:00,60,normal file index 00055-00061
+B,normal/normal_00060_20230806142107,normal,normal,normal,benign,test,in_distribution_test,True,0,13,1691302860,1691303700,2023-08-06 06:21:00,2023-08-06 06:35:00,60,normal file index 00055-00061
+B,normal/normal_00061_20230806143445,normal,normal,normal,benign,test,in_distribution_test,True,0,8,1691303640,1691304180,2023-08-06 06:34:00,2023-08-06 06:43:00,60,normal file index 00055-00061
+B,normal/normal_00062_20230806144212,normal,normal,normal,benign,heldout,fpr_normal,True,0,7,1691304120,1691304600,2023-08-06 06:42:00,2023-08-06 06:50:00,60,normal file index 00062-00067
+B,normal/normal_00063_20230806144951,normal,normal,normal,benign,heldout,fpr_normal,True,0,8,1691304540,1691305080,2023-08-06 06:49:00,2023-08-06 06:58:00,60,normal file index 00062-00067
+B,normal/normal_00064_20230806145733,normal,normal,normal,benign,heldout,fpr_normal,True,0,8,1691305020,1691305560,2023-08-06 06:57:00,2023-08-06 07:06:00,60,normal file index 00062-00067
+B,normal/normal_00065_20230806150519,normal,normal,normal,benign,heldout,fpr_normal,True,0,8,1691305500,1691306040,2023-08-06 07:05:00,2023-08-06 07:14:00,60,normal file index 00062-00067
+B,normal/normal_00066_20230806151305,normal,normal,normal,benign,heldout,fpr_normal,True,0,15,1691305980,1691306940,2023-08-06 07:13:00,2023-08-06 07:29:00,60,normal file index 00062-00067
+B,normal/normal_00067_20230806152800,normal,normal,normal,benign,heldout,fpr_normal,True,0,1,1691306880,1691307000,2023-08-06 07:28:00,2023-08-06 07:30:00,60,normal file index 00062-00067
+B,tunnel/DNS-shell,tunnel,DNS-shell,DNS-shell,tunnel,train,fit,False,0,75,1693881900,1693886460,2023-09-05 02:45:00,2023-09-05 04:01:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/DNS-shell,tunnel,DNS-shell,DNS-shell,tunnel,val,model_selection,False,77,92,1693886520,1693887480,2023-09-05 04:02:00,2023-09-05 04:18:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/DNS-shell,tunnel,DNS-shell,DNS-shell,tunnel,test,in_distribution_test,False,94,110,1693887540,1693888560,2023-09-05 04:19:00,2023-09-05 04:36:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnscat2-cname,tunnel,dnscat2-cname,dnscat2,tunnel,train,fit,False,0,63,1693727760,1693731600,2023-09-03 07:56:00,2023-09-03 09:00:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnscat2-cname,tunnel,dnscat2-cname,dnscat2,tunnel,val,model_selection,False,65,78,1693731660,1693732500,2023-09-03 09:01:00,2023-09-03 09:15:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnscat2-cname,tunnel,dnscat2-cname,dnscat2,tunnel,test,in_distribution_test,False,80,93,1693732560,1693733400,2023-09-03 09:16:00,2023-09-03 09:30:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnscat2-mx,tunnel,dnscat2-mx,dnscat2,tunnel,train,fit,False,0,99,1693738500,1693744500,2023-09-03 10:55:00,2023-09-03 12:35:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnscat2-mx,tunnel,dnscat2-mx,dnscat2,tunnel,val,model_selection,False,101,121,1693744560,1693745820,2023-09-03 12:36:00,2023-09-03 12:57:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnscat2-mx,tunnel,dnscat2-mx,dnscat2,tunnel,test,in_distribution_test,False,123,144,1693745880,1693747200,2023-09-03 12:58:00,2023-09-03 13:20:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnscat2-txt,tunnel,dnscat2-txt,dnscat2,tunnel,train,fit,False,0,54,1693733460,1693736760,2023-09-03 09:31:00,2023-09-03 10:26:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnscat2-txt,tunnel,dnscat2-txt,dnscat2,tunnel,val,model_selection,False,56,67,1693736820,1693737540,2023-09-03 10:27:00,2023-09-03 10:39:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnscat2-txt,tunnel,dnscat2-txt,dnscat2,tunnel,test,in_distribution_test,False,69,80,1693737600,1693738320,2023-09-03 10:40:00,2023-09-03 10:52:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnspot,tunnel,dnspot,dnspot,tunnel,train,fit,False,0,82,1694246340,1694251320,2023-09-09 07:59:00,2023-09-09 09:22:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnspot,tunnel,dnspot,dnspot,tunnel,val,model_selection,False,84,101,1694251380,1694252460,2023-09-09 09:23:00,2023-09-09 09:41:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/dnspot,tunnel,dnspot,dnspot,tunnel,test,in_distribution_test,False,103,120,1694252520,1694253600,2023-09-09 09:42:00,2023-09-09 10:00:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-NULL,tunnel,iodine-NULL,iodine,tunnel,train,fit,False,0,26,1693707120,1693708740,2023-09-03 02:12:00,2023-09-03 02:39:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-NULL,tunnel,iodine-NULL,iodine,tunnel,val,model_selection,False,28,33,1693708800,1693709160,2023-09-03 02:40:00,2023-09-03 02:46:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-NULL,tunnel,iodine-NULL,iodine,tunnel,test,in_distribution_test,False,35,39,1693709220,1693709520,2023-09-03 02:47:00,2023-09-03 02:52:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-a,tunnel,iodine-a,iodine,tunnel,train,fit,False,0,30,1693792200,1693794060,2023-09-04 01:50:00,2023-09-04 02:21:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-a,tunnel,iodine-a,iodine,tunnel,val,model_selection,False,32,38,1693794120,1693794540,2023-09-04 02:22:00,2023-09-04 02:29:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-a,tunnel,iodine-a,iodine,tunnel,test,in_distribution_test,False,40,46,1693794600,1693795020,2023-09-04 02:30:00,2023-09-04 02:37:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-cname,tunnel,iodine-cname,iodine,tunnel,train,fit,False,0,40,1693788600,1693791060,2023-09-04 00:50:00,2023-09-04 01:31:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-cname,tunnel,iodine-cname,iodine,tunnel,val,model_selection,False,42,50,1693791120,1693791660,2023-09-04 01:32:00,2023-09-04 01:41:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-cname,tunnel,iodine-cname,iodine,tunnel,test,in_distribution_test,False,52,60,1693791720,1693792260,2023-09-04 01:42:00,2023-09-04 01:51:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-mx,tunnel,iodine-mx,iodine,tunnel,train,fit,False,0,42,1693751580,1693754160,2023-09-03 14:33:00,2023-09-03 15:16:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-mx,tunnel,iodine-mx,iodine,tunnel,val,model_selection,False,44,52,1693754220,1693754760,2023-09-03 15:17:00,2023-09-03 15:26:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-mx,tunnel,iodine-mx,iodine,tunnel,test,in_distribution_test,False,54,63,1693754820,1693755420,2023-09-03 15:27:00,2023-09-03 15:37:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-private,tunnel,iodine-private,iodine,tunnel,train,fit,False,0,17,1693715280,1693716360,2023-09-03 04:28:00,2023-09-03 04:46:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-private,tunnel,iodine-private,iodine,tunnel,val,model_selection,False,19,22,1693716420,1693716660,2023-09-03 04:47:00,2023-09-03 04:51:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-private,tunnel,iodine-private,iodine,tunnel,test,in_distribution_test,False,24,26,1693716720,1693716900,2023-09-03 04:52:00,2023-09-03 04:55:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-srv,tunnel,iodine-srv,iodine,tunnel,train,fit,False,0,30,1693747500,1693749360,2023-09-03 13:25:00,2023-09-03 13:56:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-srv,tunnel,iodine-srv,iodine,tunnel,val,model_selection,False,32,38,1693749420,1693749840,2023-09-03 13:57:00,2023-09-03 14:04:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-srv,tunnel,iodine-srv,iodine,tunnel,test,in_distribution_test,False,40,45,1693749900,1693750260,2023-09-03 14:05:00,2023-09-03 14:11:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-txt,tunnel,iodine-txt,iodine,tunnel,train,fit,False,0,22,1693716960,1693718340,2023-09-03 04:56:00,2023-09-03 05:19:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-txt,tunnel,iodine-txt,iodine,tunnel,val,model_selection,False,24,28,1693718400,1693718700,2023-09-03 05:20:00,2023-09-03 05:25:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/iodine-txt,tunnel,iodine-txt,iodine,tunnel,test,in_distribution_test,False,30,34,1693718760,1693719060,2023-09-03 05:26:00,2023-09-03 05:31:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/tuns,tunnel,tuns,tuns,tunnel,train,fit,False,0,70,1693823460,1693827720,2023-09-04 10:31:00,2023-09-04 11:42:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/tuns,tunnel,tuns,tuns,tunnel,val,model_selection,False,72,86,1693827780,1693828680,2023-09-04 11:43:00,2023-09-04 11:58:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,tunnel/tuns,tunnel,tuns,tuns,tunnel,test,in_distribution_test,False,88,103,1693828740,1693829700,2023-09-04 11:59:00,2023-09-04 12:15:00,60,"tunnel time segment 70/15/15, 1-window gaps"
+B,unknownTunnel/cobalstrike,unknownTunnel,cobalstrike,cobalstrike,tunnel,heldout,unseen_tool,True,0,133,1693888920,1693896960,2023-09-05 04:42:00,2023-09-05 06:56:00,60,evaluation only
+B,unknownTunnel/dns2tcp-key,unknownTunnel,dns2tcp-key,dns2tcp-key,tunnel,heldout,unseen_tool,True,0,192,1693869420,1693881000,2023-09-04 23:17:00,2023-09-05 02:30:00,60,evaluation only
+B,unknownTunnel/dns2tcp-txt,unknownTunnel,dns2tcp-txt,dns2tcp-txt,tunnel,heldout,unseen_tool,True,0,53,1693831920,1693835160,2023-09-04 12:52:00,2023-09-04 13:46:00,60,evaluation only
+B,unknownTunnel/ozymandns,unknownTunnel,ozymandns,ozymandns,tunnel,heldout,unseen_tool,True,0,44,1693820700,1693823400,2023-09-04 09:45:00,2023-09-04 10:30:00,60,evaluation only
+B,unknownTunnel/tcp-over-dns-CNAME,unknownTunnel,tcp-over-dns-CNAME,tcp-over-dns-CNAME,tunnel,heldout,unseen_tool,True,0,269,1693804380,1693820580,2023-09-04 05:13:00,2023-09-04 09:43:00,60,evaluation only
+B,unknownTunnel/tcp-over-dns-TXT,unknownTunnel,tcp-over-dns-TXT,tcp-over-dns-TXT,tunnel,heldout,unseen_tool,True,0,131,1693796400,1693804320,2023-09-04 03:00:00,2023-09-04 05:12:00,60,evaluation only
+B,wildcard/wildcard_00000_20231011215521,wildcard,wildcard,wildcard,benign,train,fit,True,0,2,1697032500,1697032680,2023-10-11 13:55:00,2023-10-11 13:58:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00001_20231011215715,wildcard,wildcard,wildcard,benign,val,model_selection,True,0,6,1697032620,1697033040,2023-10-11 13:57:00,2023-10-11 14:04:00,60,wildcard config B val: most windows of file index 00000-00006
+B,wildcard/wildcard_00002_20231011220330,wildcard,wildcard,wildcard,benign,train,fit,True,0,5,1697032980,1697033340,2023-10-11 14:03:00,2023-10-11 14:09:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00003_20231011220812,wildcard,wildcard,wildcard,benign,train,fit,True,0,3,1697033280,1697033520,2023-10-11 14:08:00,2023-10-11 14:12:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00004_20231011221109,wildcard,wildcard,wildcard,benign,train,fit,True,0,2,1697033460,1697033640,2023-10-11 14:11:00,2023-10-11 14:14:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00005_20231011221350,wildcard,wildcard,wildcard,benign,train,fit,True,0,4,1697033580,1697033880,2023-10-11 14:13:00,2023-10-11 14:18:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00006_20231011221701,wildcard,wildcard,wildcard,benign,train,fit,True,0,0,1697033820,1697033880,2023-10-11 14:17:00,2023-10-11 14:18:00,60,wildcard config B file index 00000-00006
+B,wildcard/wildcard_00007_20231011221737,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,5,1697033820,1697034180,2023-10-11 14:17:00,2023-10-11 14:23:00,60,wildcard config B file index 00007-00012
+B,wildcard/wildcard_00008_20231011222232,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,6,1697034120,1697034540,2023-10-11 14:22:00,2023-10-11 14:29:00,60,wildcard config B file index 00007-00012
+B,wildcard/wildcard_00009_20231011222825,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,1,1697034480,1697034600,2023-10-11 14:28:00,2023-10-11 14:30:00,60,wildcard config B file index 00007-00012
+B,wildcard/wildcard_00010_20231011222958,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,4,1697034540,1697034840,2023-10-11 14:29:00,2023-10-11 14:34:00,60,wildcard config B file index 00007-00012
+B,wildcard/wildcard_00011_20231011223332,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,5,1697034780,1697035140,2023-10-11 14:33:00,2023-10-11 14:39:00,60,wildcard config B file index 00007-00012
+B,wildcard/wildcard_00012_20231011223819,wildcard,wildcard,wildcard,benign,heldout,fpr_wildcard,True,0,17,1697035080,1697036160,2023-10-11 14:38:00,2023-10-11 14:56:00,60,wildcard config B file index 00007-00012
