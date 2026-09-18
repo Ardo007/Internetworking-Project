@@ -521,22 +521,22 @@ def render_run_section(run_name, title, description=(), reference_name=None, run
                 f"Epoch cap {cap} (early stopping on val loss, patience 5, best weights restored; "
                 "learning rate halved after 2 epochs without improvement). "
                 "`stopped` is the last epoch trained, `best` the epoch with the lowest val loss (the weights kept). "
-                "The last column shows how much the best val loss improved on the value at epoch 50.", ""]
+                "The `best vs epoch 50` column is the relative change in val loss from epoch 50 to the best epoch.", ""]
         rows = []
         for name, table in curves.items():
             ref_epochs = reference.get(name, {}).get("epochs") if reference else None
-            gain = table["val_loss_at_50"] - table["best_val_loss"]
+            change = (table["best_val_loss"] - table["val_loss_at_50"]) / table["val_loss_at_50"]
             rows.append([f"`{name}`",
                          ", ".join(map(str, table["stopped_epoch"])),
                          ", ".join(map(str, table["best_epoch"])),
                          f"{int(table['early_stopped'].sum())}/{len(table)}",
-                         ", ".join(f"{v:.4f}" for v in table["val_loss_at_50"]),
-                         ", ".join(f"{v:.4f}" for v in table["best_val_loss"]),
-                         ", ".join(f"{v:.1e}" for v in table["final_learning_rate"]),
-                         ", ".join("n/a" if math.isnan(v) else f"{v:.4f}" for v in gain)]
+                         ", ".join("n/a" if math.isnan(v) else f"{v:.2e}" for v in table["val_loss_at_50"]),
+                         ", ".join(f"{v:.2e}" for v in table["best_val_loss"]),
+                         ", ".join("n/a" if math.isnan(v) else f"{100 * v:+.0f}%" for v in change),
+                         ", ".join(f"{v:.0e}" for v in table["final_learning_rate"])]
                         + ([", ".join(map(str, ref_epochs)) if ref_epochs else "n/a"] if reference else []))
         out += [md_table(["configuration", "stopped", "best", "early-stopped", "val loss @ 50", "best val loss",
-                          "final LR", "val loss gain after 50"] + ([f"{reference_label} epochs"] if reference else []),
+                          "best vs epoch 50", "final LR"] + ([f"{reference_label} epochs"] if reference else []),
                          rows), ""]
         for name, result in run.items():
             if not result.get("histories"):
