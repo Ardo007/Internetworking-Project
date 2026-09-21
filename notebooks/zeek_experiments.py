@@ -26,6 +26,7 @@ write_run_section   render one run's section of results/zeek_run.md, next
 import hashlib
 import json
 import math
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -124,8 +125,6 @@ def load_features(rebuild=False, n_jobs=8, verbose=True):
         table[f"role_{config}"] = assignment["role"]
         table[f"sample_{config}"] = ds.fit_sample_mask(df, assignment)
 
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    table.to_csv(FEATURES_CSV, index=False, lineterminator="\n")
     meta = {
         "fingerprint": fingerprint,
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -135,11 +134,33 @@ def load_features(rebuild=False, n_jobs=8, verbose=True):
         "sampling_seed": ds.SAMPLING_SEED,
         "capture_stats": df.attrs["capture_stats"],
     }
-    CACHE_META.write_text(json.dumps(meta, indent=1), encoding="utf-8")
     table.attrs["capture_stats"] = meta["capture_stats"]
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        # Write-then-rename, so a reader (or a second process building the
+        # same cache) never sees a half-written file.
+        _write_atomic(FEATURES_CSV, lambda path: table.to_csv(path, index=False, lineterminator="\n"))
+        _write_atomic(CACHE_META, lambda path: path.write_text(json.dumps(meta, indent=1), encoding="utf-8"))
+    except PermissionError:
+        # Another process has the cache open (Windows); keep this table in memory.
+        if verbose:
+            print(f"Built {len(table):,} rows; {FEATURES_CSV} is in use, so the cache was not updated")
+        return table
     if verbose:
         print(f"Built {len(table):,} rows and wrote {FEATURES_CSV}")
     return table
+
+
+def _write_atomic(path, write):
+    """Call write(temporary path), then move it over `path` in one step."""
+    path = Path(path)
+    temporary = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        write(temporary)
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
 
 
 def split_masks(table, config):
@@ -385,6 +406,12 @@ def _jsonable(value):
     return value
 
 
+def result_path(run_name, name, runs_dir=RUNS_DIR):
+    """results/runs/<run>/<name>.json. The file is written last, after the
+    configuration's models are saved, so it marks the configuration done."""
+    return Path(runs_dir) / run_name / f"{name}.json"
+
+
 def save_result(run_name, name, result, runs_dir=RUNS_DIR):
     """Write one configuration's result to results/runs/<run>/<name>.json."""
     keep = ("config", "feature_set", "per_run", "epochs", "histories", "input_columns", "train_rows",
@@ -392,16 +419,24 @@ def save_result(run_name, name, result, runs_dir=RUNS_DIR):
     payload = {"run": run_name, "name": name, **{k: result.get(k) for k in keep if k in result}}
     payload["summary"] = result["summary"].to_dict(orient="index")
     payload["window_sizes"] = result["window_sizes"].to_dict(orient="records")
-    path = Path(runs_dir) / run_name / f"{name}.json"
+    path = result_path(run_name, name, runs_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(_jsonable(payload), indent=1), encoding="utf-8")
+    text = json.dumps(_jsonable(payload), indent=1)
+    _write_atomic(path, lambda temporary: temporary.write_text(text, encoding="utf-8"))
     return path
+
+
+#: Per-run report settings (title, description, reference run, layout) in
+#: results/runs/<run>/run.json; not a configuration result.
+RUN_METADATA = "run.json"
 
 
 def load_run(run_name, runs_dir=RUNS_DIR):
     """name -> result for every configuration saved under results/runs/<run>/."""
     results = {}
     for path in sorted((Path(runs_dir) / run_name).glob("*.json")):
+        if path.name == RUN_METADATA:
+            continue
         result = json.loads(path.read_text(encoding="utf-8"))
         summary = pd.DataFrame.from_dict(result["summary"], orient="index")
         result["summary"] = summary.astype(float)
@@ -623,3 +658,14 @@ def write_run_section(run_name, title, report_path=REPORT_PATH, **kwargs):
     report_path = Path(report_path)
     markdown = render_run_section(run_name, title, figures_dir=report_path.parent / "figures", **kwargs)
     return upsert_section(report_path, run_name, markdown)
+
+
+def write_run_report(run_name, report_path=REPORT_PATH, runs_dir=RUNS_DIR):
+    """Write a run's section of results/zeek_run.md using the report settings
+    in results/runs/<run>/run.json (title, description, reference run and
+    labels)."""
+    spec = json.loads((Path(runs_dir) / run_name / RUN_METADATA).read_text(encoding="utf-8"))
+    layout = spec.pop("layout", "single")
+    if layout != "single":
+        raise ValueError(f"Unknown report layout {layout!r} in {run_name}/{RUN_METADATA}")
+    return write_run_section(run_name, report_path=report_path, runs_dir=runs_dir, **spec)

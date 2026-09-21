@@ -1,3 +1,4 @@
+import json
 import math
 
 import pandas as pd
@@ -71,6 +72,26 @@ def test_save_and_load_run(tmp_path):
 def test_load_run_needs_results(tmp_path):
     with pytest.raises(FileNotFoundError):
         zx.load_run("missing", runs_dir=tmp_path)
+
+
+def test_run_json_drives_the_report_and_is_not_a_configuration(tmp_path):
+    runs = tmp_path / "runs"
+    zx.save_result("run2", "B", result("B", {"test_accuracy": 0.99}, epochs=[50]), runs_dir=runs)
+    (runs / "run2" / zx.RUN_METADATA).write_text(
+        json.dumps({"title": "Run 2: a title", "description": ["why it ran"], "run_label": "run 2"}), encoding="utf-8")
+    assert list(zx.load_run("run2", runs_dir=runs)) == ["B"]
+    report = tmp_path / "zeek_run.md"
+    zx.write_run_report("run2", report_path=report, runs_dir=runs)
+    text = report.read_text(encoding="utf-8")
+    assert "## Run 2: a title" in text and "why it ran" in text and "| metric | run 2 B |" in text
+    (runs / "run2" / zx.RUN_METADATA).write_text(json.dumps({"title": "x", "layout": "mystery"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="mystery"):
+        zx.write_run_report("run2", report_path=report, runs_dir=runs)
+
+
+def test_save_result_leaves_no_temporary_files(tmp_path):
+    zx.save_result("run2", "B", result("B", {"test_accuracy": 0.99}, epochs=[50]), runs_dir=tmp_path)
+    assert [p.name for p in (tmp_path / "run2").iterdir()] == ["B.json"]
 
 
 def test_render_run_section_next_to_reference(tmp_path):
