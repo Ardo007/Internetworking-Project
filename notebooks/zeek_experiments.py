@@ -80,10 +80,16 @@ def _normalised_bytes(path):
     return Path(path).read_bytes().replace(b"\r\n", b"\n")
 
 
+#: Bump when load_features changes what it writes. (The rest of this module,
+#: e.g. the report code, doesn't affect the cache, so its source isn't hashed.)
+CACHE_VERSION = 2
+
+
 def _fingerprint(manifest_rows):
     digest = hashlib.sha256()
-    for source in (ds.SPLITS_PATH, zfe.__file__, ds.__file__, dns_feature_extraction.__file__, __file__):
+    for source in (ds.SPLITS_PATH, zfe.__file__, ds.__file__, dns_feature_extraction.__file__):
         digest.update(_normalised_bytes(source))
+    digest.update(f"cache version {CACHE_VERSION}".encode())
     for row in manifest_rows:
         for path in zfe._dns_log_paths(row):
             stat = path.stat()
@@ -333,6 +339,85 @@ def rescore_saved(table, directory, config, masks=None, relabel=None):
         "source": "re-scored from the saved models in "
                   f"`{Path(directory).parent.relative_to(zfe.PROJECT_ROOT).as_posix()}/<name>/`",
     }
+
+
+def neutralised_scores(table, directory, config, features, masks=None, relabel=None):
+    """Score saved models with each of `features`, and then all of them,
+    replaced by the training mean (0 after scaling).
+
+    Inference only: it shows how much the saved models rely on each feature,
+    which retraining without the feature doesn't isolate (the retrained model
+    adapts). Returns [{"variant", "neutralised", "summary"}], the first being
+    the models as trained.
+    """
+    import model_artifacts as ma
+
+    artifacts = ma.load_artifacts(directory)
+    masks = {**split_masks(table, config), **(masks or {})}
+    meta = evaluation_meta(table, config, masks["evaluation"])
+    if relabel is not None:
+        meta = relabel(meta)
+    X = ma.prepare_model_input(table.loc[masks["evaluation"]], artifacts)
+    columns = artifacts["features"]["input_columns"]
+    tunnel = list(artifacts["label_encoder"].classes_).index("tunnel")
+    variants = [("as trained", [])] + [(f"without {f}", [f]) for f in features]
+    if len(features) > 1:
+        variants.append(("without both" if len(features) == 2 else "without all", list(features)))
+    out = []
+    for label, dropped in variants:
+        X_variant = X.copy()
+        for feature in dropped:
+            X_variant[:, 0, columns.index(feature)] = 0.0
+        per_run = [evaluate(meta, model.predict(X_variant, batch_size=8192, verbose=0).argmax(axis=1) == tunnel)
+                   for model in artifacts["models"]]
+        out.append({"variant": label, "neutralised": dropped, "summary": summarise(per_run)})
+    return out
+
+
+def save_diagnostic(run_name, name, payload, runs_dir=RUNS_DIR):
+    """Write results/runs/<run>/diagnostics/<name>.json (not a configuration
+    result, so load_run ignores it). Summaries are stored as dicts."""
+    def encode(value):
+        if isinstance(value, pd.DataFrame):
+            return value.to_dict(orient="index")
+        if isinstance(value, dict):
+            return {k: encode(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [encode(v) for v in value]
+        return value
+    path = Path(runs_dir) / run_name / "diagnostics" / f"{name}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(_jsonable(encode(payload)), indent=1)
+    _write_atomic(path, lambda temporary: temporary.write_text(text, encoding="utf-8"))
+    return path
+
+
+def load_diagnostic(run_name, name, runs_dir=RUNS_DIR):
+    return json.loads((Path(runs_dir) / run_name / "diagnostics" / f"{name}.json").read_text(encoding="utf-8"))
+
+
+def write_feature_neutralisation(run_name, table, models_root, names, features, description,
+                                 config=ds.PRIMARY_CONFIG, runs_dir=RUNS_DIR):
+    """neutralised_scores for each saved configuration in `names` (folds use
+    their leave-one-family-out rows), plus how often each traffic type has
+    more than one query type per domain window. Written to
+    results/runs/<run>/diagnostics/feature_neutralisation.json."""
+    results = {}
+    for name in names:
+        masks, relabel = lofo_masks(table, name.removeprefix("lofo-"), config) if name.startswith("lofo-") else (None, None)
+        results[name] = neutralised_scores(table, Path(models_root) / name, config, features, masks, relabel)
+    groups = {"normal (train)": table["category"].eq("normal") & table[f"split_{config}"].eq("train"),
+              f"wildcard (train, config {config})": table["category"].eq("wildcard") & table[f"split_{config}"].eq("train")}
+    for category in ("tunnel", "unknownTunnel", "crossEndPoint"):
+        for tool in sorted(table.loc[table["category"].eq(category), "tool"].unique()):
+            groups[tool] = table["category"].eq(category) & table["tool"].eq(tool)
+    feature_values = {name: {"rows": int(mask.sum()),
+                             "share_above_1": float(100 * (table.loc[mask, "domain_qtype_diversity"] > 1).mean())}
+                      for name, mask in groups.items()}
+    models = Path(models_root).relative_to(zfe.PROJECT_ROOT).as_posix() + "/<name>/"
+    return save_diagnostic(run_name, "feature_neutralisation", {
+        "description": description, "models": models, "features": list(features), "results": results,
+        "feature_values": feature_values}, runs_dir)
 
 
 # ------------------------------------------------------ training curves --
@@ -660,12 +745,166 @@ def write_run_section(run_name, title, report_path=REPORT_PATH, **kwargs):
     return upsert_section(report_path, run_name, markdown)
 
 
+def _avg(result, metric):
+    summary = result["summary"]
+    return summary.loc[metric, "avg"] if metric in summary.index else math.nan
+
+
+def _pp(value):
+    return "n/a" if math.isnan(value) else f"{100 * value:+.2f} pp"
+
+
+def _row_weighted(results, folds):
+    """Share of all held-out-family rows detected, over the given folds."""
+    rows = {fold: results[fold].get("family_rows") or 0 for fold in folds}
+    total = sum(rows.values())
+    return sum(rows[f] * _avg(results[f], "held_out_family") for f in folds) / total if total else math.nan
+
+
+def render_lofo_comparison(run_name, title, columns, description=(), effects=(), highlight_captures=(),
+                           diagnostic=None, findings=(), runs_dir=RUNS_DIR):
+    """Markdown comparing the leave-one-family-out folds of several runs.
+
+    columns: [{"run", "label", "features", "epochs"}], the last one being
+    this run. effects: [{"label", "from", "to"}] (run names), shown as the
+    difference in average recall. diagnostic: name of a file in
+    results/runs/<run>/diagnostics/ written from neutralised_scores.
+    """
+    runs = {c["run"]: load_run(c["run"], runs_dir) for c in columns}
+    this = runs[run_name]
+    folds = [n for n in this if n.startswith("lofo-")]
+    labels = {c["run"]: c["label"] for c in columns}
+    head = [f"{c['label']} ({c['features']} features, {c['epochs']} epochs)" for c in columns]
+    first = this[folds[0]]
+    git = first.get("git") or {}
+    out = [f"## {title}", ""] + list(description) + [""]
+    out += [f"- Run `{run_name}`: {', '.join(f'`{f}`' for f in folds)}; trained "
+            f"{min(this[f].get('trained_at') or '' for f in folds)} – {max(this[f].get('trained_at') or '' for f in folds)}.",
+            f"- Git commit: `{git.get('commit')}`" + (" (working tree had uncommitted changes)" if git.get("dirty") else ""),
+            "- Versions: " + ", ".join(f"{k} {v}" for k, v in (first.get("environment") or {}).items() if k != "platform"),
+            f"- Models: `models/zeek_bilstm/{run_name}/<fold>/`; results: `results/runs/{run_name}/<fold>.json`.", ""]
+
+    rows = []
+    for key in ("epoch_cap", "row_caps", "sampling_seed", "window_seconds", "splits_sha256"):
+        rows.append([key] + [f"`{runs[c['run']][folds[0]]['settings'].get(key)}`" for c in columns])
+    rows.append(["feature set"] + [f"`{runs[c['run']][folds[0]].get('feature_set')}`" for c in columns])
+    out += ["### Settings", "", md_table(["setting"] + [c["label"] for c in columns], rows), ""]
+
+    # the 2x2 grid of row-weighted recall
+    feature_values = list(dict.fromkeys(c["features"] for c in columns))
+    epoch_values = sorted({c["epochs"] for c in columns})
+    grid = []
+    for features in feature_values:
+        cells = []
+        for epochs in epoch_values:
+            match = [c for c in columns if c["features"] == features and c["epochs"] == epochs]
+            cells.append(f"{match[0]['label']}: **{_pct(_row_weighted(runs[match[0]['run']], folds))}**" if match
+                         else "not run")
+        grid.append([f"{features} features"] + cells)
+    total_rows = sum(this[f].get("family_rows") or 0 for f in folds)
+    out += ["### Unseen-family recall", "",
+            f"Share of all {total_rows:,} held-out-family rows detected, over the five folds (each fold's average "
+            "over its 5 models, weighted by the family's rows):", "",
+            md_table([""] + [f"{e} epochs" for e in epoch_values], grid), ""]
+
+    header = ["held-out family", "rows"] + head + [e["label"] for e in effects]
+    rows = []
+    for fold in folds:
+        row = [fold.removeprefix("lofo-"), f"{this[fold].get('family_rows', 0):,}"]
+        row += [_spread(runs[c["run"]][fold]["summary"], "held_out_family") for c in columns]
+        row += [_pp(_avg(runs[e["to"]][fold], "held_out_family") - _avg(runs[e["from"]][fold], "held_out_family"))
+                for e in effects]
+        rows.append(row)
+    row = ["**all five (row-weighted)**", f"{total_rows:,}"] + [_pct(_row_weighted(runs[c["run"]], folds)) for c in columns]
+    row += [_pp(_row_weighted(runs[e["to"]], folds) - _row_weighted(runs[e["from"]], folds)) for e in effects]
+    rows.append(row)
+    out += ["Per family: average recall over the 5 models (min – max). The last columns are differences in the "
+            "average, in percentage points.", "", md_table(header, rows), ""]
+
+    header = ["held-out family"] + [f"FPR normal · {c['label']}" for c in columns] + \
+             [f"FPR wildcard · {c['label']}" for c in columns]
+    rows = [[fold.removeprefix("lofo-")] + [_pct(_avg(runs[c["run"]][fold], "fpr_normal")) for c in columns]
+            + [_pct(_avg(runs[c["run"]][fold], "fpr_wildcard")) for c in columns] for fold in folds]
+    out += ["False positive rates on the held-out benign captures stay near zero in every run:", "",
+            md_table(header, rows), ""]
+
+    captures = []
+    for fold in folds:
+        for metric in this[fold]["summary"].index:
+            if metric.startswith("held_out_family/"):
+                captures.append((fold, metric.split("/", 1)[1]))
+    order = {c: i for i, c in enumerate(highlight_captures)}
+    captures.sort(key=lambda fc: (order.get(fc[1], len(order)), fc[0], fc[1]))
+    header = ["capture", "family"] + head + [e["label"] for e in effects]
+    rows = []
+    for fold, capture in captures:
+        metric = f"held_out_family/{capture}"
+        name = f"**{capture}**" if capture in order else capture
+        rows.append([name, fold.removeprefix("lofo-")] + [_spread(runs[c["run"]][fold]["summary"], metric) for c in columns]
+                    + [_pp(_avg(runs[e["to"]][fold], metric) - _avg(runs[e["from"]][fold], metric)) for e in effects])
+    out += ["### Per capture", "",
+            "Recall on each capture of the held-out family" + (f" ({', '.join(highlight_captures)} first)"
+                                                              if highlight_captures else "") + ":", "",
+            md_table(header, rows), ""]
+
+    if diagnostic:
+        data = load_diagnostic(run_name, diagnostic, runs_dir)
+        variants = [v["variant"] for v in next(iter(data["results"].values()))]
+        out += ["### Which of the two features?", "", data["description"], ""]
+        rows = []
+        for name, entries in data["results"].items():
+            if not name.startswith("lofo-"):
+                continue
+            by_variant = {e["variant"]: e["summary"] for e in entries}
+            metrics = [("held_out_family", name.removeprefix("lofo-") + " recall")]
+            metrics += [(f"held_out_family/{c}", f"&nbsp;&nbsp;{c}") for c in highlight_captures
+                        if f"held_out_family/{c}" in by_variant["as trained"]]
+            metrics += [("fpr_wildcard", "&nbsp;&nbsp;FPR wildcard")]
+            for metric, label in metrics:
+                rows.append([label] + [_pct(by_variant[v].get(metric, {}).get("avg", math.nan)) for v in variants])
+        if rows:
+            out += [f"Run 1 fold models (`{data['models']}`), average over their 5 models:", "",
+                    md_table(["fold / capture"] + variants, rows), ""]
+        for name, entries in data["results"].items():
+            if name.startswith("lofo-"):
+                continue
+            by_variant = {e["variant"]: e["summary"] for e in entries}
+            metric_names = ["unseen_tool", "unseen_tool/ozymandns", "unseen_tool/cobalstrike", "unseen_platform",
+                            "fpr_normal", "fpr_wildcard"]
+            rows = [[_metric_label(m) if "/" not in m else f"&nbsp;&nbsp;{m.split('/', 1)[1]}"]
+                    + [_pct(by_variant[v].get(m, {}).get("avg", math.nan)) for v in variants] for m in metric_names]
+            out += [f"Run 1 config `{name}` models, average over their 5 models:", "",
+                    md_table(["metric"] + variants, rows), ""]
+        if data.get("feature_values"):
+            out += ["Share of rows whose domain has more than one query type in its 60 s window "
+                    "(`domain_qtype_diversity` > 1):", "",
+                    md_table(["traffic", "rows", "> 1 query type"],
+                             [[k, f"{v['rows']:,}", f"{v['share_above_1']:.2f}%"] for k, v in data["feature_values"].items()]),
+                    ""]
+
+    curves = {fold: training_curves(this[fold].get("histories"), this[fold]["settings"]["epoch_cap"]) for fold in folds
+              if this[fold].get("histories")}
+    if curves:
+        rows = [[f"`{fold}`", ", ".join(map(str, c["stopped_epoch"])), ", ".join(map(str, c["best_epoch"])),
+                 ", ".join(f"{v:.2e}" for v in c["best_val_loss"])] for fold, c in curves.items()]
+        out += ["### Training length", "",
+                md_table(["fold", "stopped", "best", "best val loss"], rows), ""]
+
+    if findings:
+        out += ["### Findings", ""] + list(findings) + [""]
+    return "\n".join(out)
+
+
 def write_run_report(run_name, report_path=REPORT_PATH, runs_dir=RUNS_DIR):
     """Write a run's section of results/zeek_run.md using the report settings
-    in results/runs/<run>/run.json (title, description, reference run and
-    labels)."""
+    in results/runs/<run>/run.json: layout "single" (default; title,
+    description, reference run and labels) or "lofo_comparison" (see
+    render_lofo_comparison)."""
     spec = json.loads((Path(runs_dir) / run_name / RUN_METADATA).read_text(encoding="utf-8"))
     layout = spec.pop("layout", "single")
-    if layout != "single":
-        raise ValueError(f"Unknown report layout {layout!r} in {run_name}/{RUN_METADATA}")
-    return write_run_section(run_name, report_path=report_path, runs_dir=runs_dir, **spec)
+    report_path = Path(report_path)
+    if layout == "single":
+        return write_run_section(run_name, report_path=report_path, runs_dir=runs_dir, **spec)
+    if layout == "lofo_comparison":
+        return upsert_section(report_path, run_name, render_lofo_comparison(run_name, runs_dir=runs_dir, **spec))
+    raise ValueError(f"Unknown report layout {layout!r} in {run_name}/{RUN_METADATA}")

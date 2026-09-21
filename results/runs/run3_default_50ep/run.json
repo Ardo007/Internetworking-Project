@@ -1,0 +1,33 @@
+{
+ "layout": "lofo_comparison",
+ "title": "Run 3: leave-one-family-out with 28 features at 50 epochs",
+ "description": [
+  "Run 3 retrains the five leave-one-tunnel-family-out folds with the default 28 features at run 1's epoch cap of 50, one fold per command with `notebooks/run_experiments.py` (see `results/run3_runbook.md`). Splits, row caps, seeds, early stopping and `Build_model` are as in runs 1 and 2, so the three runs form a 2×2 comparison of feature set and training length on unseen-family recall: run 3 − run 1 is the effect of dropping `domain_qtype_diversity` and `no_response_ratio`, and run 2 − run 3 the effect of 100 more epochs.",
+  "",
+  "Run 1's folds were trained after other configurations in one kernel without reseeding, and their input layer has 43 columns instead of 41, so their starting weights differ from run 3's anyway; the spread over each fold's 5 models shows how much that alone moves the results."
+ ],
+ "columns": [
+  {"run": "run1_all_50ep", "label": "run 1", "features": "30", "epochs": 50},
+  {"run": "run2_default_150ep", "label": "run 2", "features": "28", "epochs": 150},
+  {"run": "run3_default_50ep", "label": "run 3", "features": "28", "epochs": 50}
+ ],
+ "effects": [
+  {"label": "feature change (run 3 − run 1)", "from": "run1_all_50ep", "to": "run3_default_50ep"},
+  {"label": "100 more epochs (run 2 − run 3)", "from": "run3_default_50ep", "to": "run2_default_150ep"}
+ ],
+ "highlight_captures": ["iodine-NULL", "iodine-private", "iodine-a", "iodine-srv"],
+ "diagnostic": "feature_neutralisation",
+ "findings": [
+  "1. **The drop comes from the feature change, not the longer training.** Over all five folds, dropping the two features cost 6.72 pp of unseen-family recall (62.88% → 56.16%, run 1 → run 3); 100 more epochs cost a further 0.84 pp (run 3 → run 2). About three quarters of it is iodine (−16.17 pp from the features, −1.76 pp from the epochs), and within iodine the NULL (−63.46 pp) and private (−81.27 pp) captures. iodine-a and iodine-srv are missed in every run (at most 1.07%).",
+  "2. **Run 3 is run 2 stopped at epoch 50.** For all 25 models the validation loss at epoch 50 is the same in both runs, and dnscat2's second model early-stops at epoch 40 in both, so run 2 − run 3 isolates the extra 100 epochs exactly. They lowered the validation loss by a median of about 30% and changed held-out-family recall by −1.76 to +0.13 pp per family. The 50-epoch cap loses nothing.",
+  "3. **DNS-shell and dnspot are missed with either feature set.** Run 1's 6.47% and 4.10% come from single models (DNS-shell 20.49% and 10.10%, the other three at most 1.03%; dnspot 14.94%, the other four 1.3–1.5%). Runs 2 and 3 find 0.03–0.55%.",
+  "4. **Of the two dropped features, only `domain_qtype_diversity` mattered.** Neutralising it in run 1's fold models reproduces most of the loss (iodine-NULL 82.87% → 35.70%, iodine-private 88.30% → 44.90%, DNS-shell 6.47% → 1.22%, dnspot 4.10% → 0.87%). Neutralising `no_response_ratio` moves recall by −1.27 pp (iodine-private) to +6.16 pp (iodine-mx), mostly upwards, and leaves config B unchanged.",
+  "5. **In GraphTunnel, `domain_qtype_diversity` identifies the wildcard captures, not tunnels.** More than one query type per domain window occurs in 99.998% of wildcard training rows (its A+AAAA pairs), in 0.02% of normal rows and in at most 0.03% of the tunnel-family captures. Run 1's models use it to recognise wildcard as benign: with it neutralised they flag 1.8–25.4% of held-out wildcard. That shortcut leaves room to call other unusual traffic a tunnel, which catches more unseen iodine variants, but it also calls benign any tunnel that mixes query types. ozymandns mixes them in 80.4% of its rows, and run 1's config B found 19.91% of it (100% with the feature neutralised, and 100% in run 2); cobalstrike mixes them in 7.0% and run 1 found 92.45% (99.32% neutralised).",
+  "6. **Recommendation: keep the 28-feature default (`all_minus_artefact_suspect`).**",
+  "   - `no_response_ratio` contributes nothing measurable in any fold or in config B, and its GraphTunnel values reflect how the wildcard capture was recorded (about half of its queries unanswered).",
+  "   - `domain_qtype_diversity` buys unseen-family recall through a shortcut tied to how the wildcard traffic was generated, and the same shortcut lets any tunnel that mixes record types pass as benign, an evasion ozymandns already shows. Without it the model keeps 0.00% false positives on held-out normal and wildcard and finds all of ozymandns.",
+  "   - The cost is lower unseen-family recall (56.16% against 62.88% over the five folds), mostly iodine NULL and private. That is better addressed with training data, such as more tunnel families and record types, or realistic benign traffic whose clients ask for A, AAAA and HTTPS records (the `own_benign` captures), than with this feature.",
+  "   - If unseen-family recall matters more than that evasion, the alternative is to drop only `no_response_ratio` (29 features). The neutralisation results suggest it would recover most of the iodine recall and miss most of ozymandns again, but that set hasn't been trained.",
+  "7. **Model selection can't see generalisation to the held-out family.** In these folds the validation rows come only from the four trained-on families and from benign traffic, so `val_accuracy` is about 1.0000 from the first epoch and the validation loss keeps falling (by about 30% between epochs 50 and 150 in run 2) while held-out-family recall stays flat or drops. Early stopping and the best-epoch weights therefore optimise the fit to known tools only. A selection signal for unseen families would need another family held out of training for validation (nested leave-one-family-out), at roughly four times the training cost."
+ ]
+}

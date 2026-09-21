@@ -447,7 +447,10 @@ ALL_FEATURE_COLUMNS = list(dict.fromkeys(c for group in FEATURE_GROUPS.values() 
 #: Default model inputs: every feature except the artefact-suspect pair. In
 #: run 1 (results/zeek_run.md) dropping domain_qtype_diversity and
 #: no_response_ratio raised unseen-tool recall from 97.09% to 99.18% with
-#: false positive rates of 0.00% on held-out normal and wildcard. Both are
+#: false positive rates of 0.00% on held-out normal and wildcard; run 3 showed
+#: the cost, unseen-family recall 62.88% -> 56.16%. Both effects come from
+#: domain_qtype_diversity, which in GraphTunnel only marks the wildcard
+#: captures and lets tunnels that mix query types pass as benign. Both are
 #: still computed and stay available through FEATURE_SETS["all"].
 FEATURE_COLUMNS = [c for c in ALL_FEATURE_COLUMNS if c not in FEATURE_GROUPS["artefact_suspect"]]
 

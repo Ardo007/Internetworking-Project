@@ -211,16 +211,26 @@ has finished. None exist yet. Note that `capture_live.py` keeps only the last
 
 ## 6. Training and results
 
-Open `notebooks/dns_tunneling_bilstm_model.ipynb` and run it top to bottom
-(see `notebooks/README.md` for the environment). It caches the feature table in
-`notebooks/dataset_zeek/`, trains the configurations and writes:
+Train with `notebooks/dns_tunneling_bilstm_model.ipynb`, either top to bottom
+in Jupyter/VS Code or one configuration at a time from the command line with
+`notebooks/run_experiments.py`, which runs the same notebook and shows the
+progress of every epoch (see `notebooks/README.md` and the worked example in
+`results/run3_runbook.md`). The feature table is cached in
+`notebooks/dataset_zeek/`. Each training run has a name, and for every
+configuration it trains it writes:
 
-- `models/zeek_bilstm/<name>/` — one folder per configuration with
-  `model_*.keras`, `scaler.joblib`, `label_encoder.joblib` and `features.json`
-  (feature order, one-hot input columns, window length, row caps, sampling
-  seed, training date, git commit and library versions). Gitignored:
-  regenerate by running the notebook.
-- `results/zeek_run.md` — the metrics of the run, committed.
+- `models/zeek_bilstm/<run>/<name>/`: `model_*.keras`, `scaler.joblib`,
+  `label_encoder.joblib` and `features.json` (feature order, one-hot input
+  columns, window length, row caps, sampling seed, training date, git commit
+  and library versions). Gitignored: regenerate by re-running the run's
+  configurations. Run 1's models are directly under `models/zeek_bilstm/<name>/`.
+- `results/runs/<run>/<name>.json`: metrics and per-epoch loss histories,
+  committed. It is written last, so its presence marks the configuration as
+  done.
+
+`results/zeek_run.md` has one section per run, rendered from those files and
+the run's report settings (`results/runs/<run>/run.json`). Each section is
+replaced on its own, leaving earlier runs untouched.
 
 ## 7. Live capture pipeline
 

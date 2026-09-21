@@ -1,6 +1,7 @@
 import json
 import math
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -120,6 +121,85 @@ def test_render_run_section_next_to_reference(tmp_path):
     assert "| dnspot | 26,687 |" in markdown and "4.00%" in markdown and "50.00%" in markdown
     assert (tmp_path / "figures" / "run2_B_loss.png").exists()
     assert (tmp_path / "figures" / "run2_lofo-dnspot_loss.png").exists()
+
+
+def lofo_result(name, recall, captures, family_rows, epochs=(50,), fpr=0.0):
+    metrics = {"held_out_family": recall, "fpr_normal": fpr, "fpr_wildcard": fpr,
+               **{f"held_out_family/{c}": v for c, v in captures.items()}}
+    return result(name, metrics, [history([0.5] * e) for e in epochs], family_rows=family_rows)
+
+
+def test_render_lofo_comparison(tmp_path):
+    runs = tmp_path / "runs"
+    data = {
+        "old": {"lofo-iodine": lofo_result("lofo-iodine", 0.6, {"iodine-NULL": 0.8, "iodine-a": 0.0}, 300),
+                "lofo-tuns": lofo_result("lofo-tuns", 1.0, {"tuns": 1.0}, 100)},
+        "long": {"lofo-iodine": lofo_result("lofo-iodine", 0.35, {"iodine-NULL": 0.1, "iodine-a": 0.0}, 300, (150,)),
+                 "lofo-tuns": lofo_result("lofo-tuns", 0.9, {"tuns": 0.9}, 100, (150,))},
+        "new": {"lofo-iodine": lofo_result("lofo-iodine", 0.4, {"iodine-NULL": 0.2, "iodine-a": 0.0}, 300),
+                "lofo-tuns": lofo_result("lofo-tuns", 0.9, {"tuns": 0.9}, 100)},
+    }
+    for run, results in data.items():
+        for name, r in results.items():
+            zx.save_result(run, name, r, runs_dir=runs)
+    zx.save_diagnostic("new", "neutral", {
+        "description": "diagnostic text", "models": "models/x/<name>/", "features": ["f"],
+        "results": {"lofo-iodine": [
+            {"variant": "as trained", "summary": {"held_out_family": {"avg": 0.6}, "fpr_wildcard": {"avg": 0.0},
+                                                   "held_out_family/iodine-NULL": {"avg": 0.8}}},
+            {"variant": "without f", "summary": {"held_out_family": {"avg": 0.45}, "fpr_wildcard": {"avg": 0.02},
+                                                  "held_out_family/iodine-NULL": {"avg": 0.3}}}]},
+        "feature_values": {"wildcard": {"rows": 10, "share_above_1": 99.998}}}, runs_dir=runs)
+    (runs / "new" / zx.RUN_METADATA).write_text(json.dumps({
+        "layout": "lofo_comparison", "title": "Run 3",
+        "columns": [{"run": "old", "label": "run 1", "features": "30", "epochs": 50},
+                    {"run": "long", "label": "run 2", "features": "28", "epochs": 150},
+                    {"run": "new", "label": "run 3", "features": "28", "epochs": 50}],
+        "effects": [{"label": "feature change", "from": "old", "to": "new"},
+                    {"label": "more epochs", "from": "new", "to": "long"}],
+        "highlight_captures": ["iodine-NULL"], "diagnostic": "neutral", "findings": ["the finding"]}), encoding="utf-8")
+    report = tmp_path / "zeek_run.md"
+    report.write_text("# Report\n\nrun 1 text\n", encoding="utf-8")
+    zx.write_run_report("new", report_path=report, runs_dir=runs)
+    text = report.read_text(encoding="utf-8")
+    assert text.startswith("# Report\n\nrun 1 text\n")
+    # 2x2 grid of row-weighted recall: (300*0.6 + 100*1.0) / 400 = 70%
+    assert "| 30 features | run 1: **70.00%** | not run |" in text
+    assert "| 28 features | run 3: **52.50%** | run 2: **48.75%** |" in text
+    assert "| iodine | 300 | 60.00% (60.00% – 60.00%) | 35.00% (35.00% – 35.00%) | 40.00% (40.00% – 40.00%) " \
+           "| -20.00 pp | -5.00 pp |" in text
+    assert "| **all five (row-weighted)** | 400 | 70.00% | 48.75% | 52.50% | -17.50 pp | -3.75 pp |" in text
+    assert text.index("**iodine-NULL**") < text.index("| iodine-a |")          # highlighted captures first
+    assert "diagnostic text" in text and "| &nbsp;&nbsp;iodine-NULL | 80.00% | 30.00% |" in text
+    assert "| wildcard | 10 | 100.00% |" in text
+    assert "### Findings" in text and "the finding" in text
+
+
+def test_neutralised_scores(monkeypatch):
+    import model_artifacts as ma
+
+    class Encoder:
+        classes_ = ["benign", "tunnel"]
+
+    class Model:
+        # predicts tunnel when input column 1 (the feature under test) is positive
+        def predict(self, X, batch_size=None, verbose=0):
+            tunnel = X[:, 0, 1] > 0
+            return np.stack([~tunnel, tunnel], axis=1).astype(float)
+
+    table = pd.DataFrame({"Label": ["tunnel", "tunnel", "benign"], "category": ["unknownTunnel"] * 2 + ["normal"],
+                          "capture_id": ["u/a", "u/b", "n/c"], "tool": ["a", "b", "normal"], "family": ["a", "b", "normal"],
+                          "window_query_count": [100, 100, 100], "split_B": ["heldout"] * 3,
+                          "role_B": ["unseen_tool", "unseen_tool", "fpr_normal"], "sample_B": [False] * 3})
+    X = np.array([[[0.5, 1.0, 2.0]], [[0.5, 1.0, -1.0]], [[0.5, -1.0, 1.0]]])
+    monkeypatch.setattr(ma, "load_artifacts", lambda d: {"features": {"input_columns": ["x", "f1", "f2"]},
+                                                         "models": [Model()], "label_encoder": Encoder()})
+    monkeypatch.setattr(ma, "prepare_model_input", lambda frame, art: X[: len(frame)])
+    out = zx.neutralised_scores(table, "ignored", "B", ["f1", "f2"])
+    assert [o["variant"] for o in out] == ["as trained", "without f1", "without f2", "without both"]
+    recall = {o["variant"]: o["summary"].loc["unseen_tool", "avg"] for o in out}
+    assert recall == {"as trained": 1.0, "without f1": 0.0, "without f2": 1.0, "without both": 0.0}
+    assert X[0, 0, 1] == 1.0  # the caller's matrix is not modified
 
 
 # ------------------------------------------------------ leave one out --
