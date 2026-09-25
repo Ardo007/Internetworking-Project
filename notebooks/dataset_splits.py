@@ -376,23 +376,26 @@ def row_caps_for(categories, caps=ROW_CAPS):
     return categories.astype(str).map(lambda c: caps.get(c, caps["default"]))
 
 
-def cap_rows_per_window(df, caps=ROW_CAPS, seed=SAMPLING_SEED):
-    """Keep at most caps[category] (else caps["default"]) randomly chosen
-    rows per (capture, window). `df` must hold whole windows."""
+def cap_mask(df, caps=ROW_CAPS, seed=SAMPLING_SEED):
+    """True for the at most caps[category] (else caps["default"]) randomly
+    chosen rows of each (capture, window). `df` must hold whole windows."""
     keys = sampling_keys(df, seed)
     rank = keys.groupby([df["capture_id"], df["window_id"]]).rank(method="first")
-    return df[rank <= row_caps_for(df["category"], caps)]
+    return rank <= row_caps_for(df["category"], caps)
+
+
+def cap_rows_per_window(df, caps=ROW_CAPS, seed=SAMPLING_SEED):
+    """The rows of `df` kept by cap_mask."""
+    return df[cap_mask(df, caps, seed)]
 
 
 def fit_sample_mask(df, assignment, caps=ROW_CAPS, seed=SAMPLING_SEED):
-    """True for the train/val rows kept by cap_rows_per_window.
+    """True for the train/val rows kept by cap_mask.
 
     Test and held-out rows are never sampled (they are scored in full), and
     gap-window rows belong to no split, so both are False here.
     """
-    keys = sampling_keys(df, seed)
-    rank = keys.groupby([df["capture_id"], df["window_id"]]).rank(method="first")
-    return assignment["split"].isin(SAMPLED_SPLITS).fillna(False).astype(bool) & (rank <= row_caps_for(df["category"], caps))
+    return assignment["split"].isin(SAMPLED_SPLITS).fillna(False).astype(bool) & cap_mask(df, caps, seed)
 
 
 def split_counts(df, assignment, sample=None):

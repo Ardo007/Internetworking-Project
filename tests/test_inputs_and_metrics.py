@@ -1,3 +1,4 @@
+import json
 import math
 
 import numpy as np
@@ -101,3 +102,29 @@ def test_summarise():
     summary = zx.summarise([{"x": 0.2, "y": 1.0}, {"x": 0.4, "y": 1.0}, {"x": 0.9, "y": 1.0}])
     assert summary.loc["x"].tolist() == pytest.approx([0.2, 0.5, 0.9])
     assert summary.loc["y"].tolist() == [1.0, 1.0, 1.0]
+
+
+# ------------------------------------------------------- saved artefacts --
+
+class _SavedModel:
+    def save(self, path):
+        path.write_text("model", encoding="utf-8")
+
+
+def _save(directory, monkeypatch, **info):
+    from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+    monkeypatch.setattr(ma, "environment_info", lambda: {"python": "3.13"})
+    monkeypatch.setattr(ma, "git_info", lambda: {"commit": "abc", "dirty": False})
+    return ma.save_artifacts(directory, [_SavedModel(), _SavedModel()], StandardScaler().fit([[0.0], [1.0]]),
+                             LabelEncoder().fit(["benign", "tunnel"]), ["qname_len"], ["qname_len"], info)
+
+
+def test_final_model_folder_is_marked_not_for_evaluation(tmp_path, monkeypatch):
+    directory = _save(tmp_path / "final", monkeypatch, not_for_evaluation=True, note="trained on everything")
+    assert (directory / ma.NOT_FOR_EVALUATION_FILE).read_text(encoding="utf-8") == "trained on everything\n"
+    spec = json.loads((directory / "features.json").read_text(encoding="utf-8"))
+    assert spec["not_for_evaluation"] is True and spec["models"] == ["model_1.keras", "model_2.keras"]
+    # retraining the folder as an evaluated configuration removes the marker
+    _save(directory, monkeypatch, not_for_evaluation=False)
+    assert not (directory / ma.NOT_FOR_EVALUATION_FILE).exists()

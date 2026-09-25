@@ -65,6 +65,26 @@ def test_names_and_overrides(roots):
     assert namespace["FEATURE_SET"] == "all_minus_artefact_suspect"  # not overridden unless asked
 
 
+def test_final_model_names_and_overrides(roots):
+    args = rx.parse_args(["--run", "run4", "--configs", "A", "--final", "--epochs", "50"])
+    assert rx.configuration_names(args) == ["A", "final"]
+    namespace = {"FEATURE_SET": "all_minus_artefact_suspect", "EPOCH_CAP": 50, "print": lambda *a, **k: None}
+    exec(rx.override_code(args, ["final"]), namespace)
+    assert namespace["RUN_FINAL"] is True and namespace["RUN_CONFIGS"] == []
+    exec(rx.override_code(args, ["A"]), namespace)
+    assert namespace["RUN_FINAL"] is False and namespace["RUN_CONFIGS"] == ["A"]
+    done = roots / "results" / "runs" / "run4" / "final.json"
+    done.parent.mkdir(parents=True)
+    done.write_text("{}", encoding="utf-8")
+    assert rx.plan(args) == (["A"], ["final"])
+
+
+def test_sanity_with_only_the_final_model(roots):
+    args = rx.parse_args(["--sanity", "--final"])
+    assert (args.lofo, args.final, args.models, args.epochs) == ([], True, 1, 1)
+    assert rx.configuration_names(args) == ["final"]
+
+
 def test_done_configurations_are_skipped_unless_overwrite(roots):
     done = roots / "results" / "runs" / "run3" / "lofo-dnspot.json"
     done.parent.mkdir(parents=True)
@@ -99,3 +119,14 @@ def test_summary_line(tmp_path):
                     "fpr_wildcard": {"avg": 0.0029}}}), encoding="utf-8")
     line = rx.summary_line(path)
     assert "held_out_family 40.31%" in line and "collapsed 1/2" in line and "10.0 min" in line
+
+
+def test_summary_line_of_the_final_model(tmp_path):
+    path = tmp_path / "final.json"
+    path.write_text(json.dumps({
+        "name": "final", "not_for_evaluation": True, "epochs": [50], "seconds": 1200,
+        "train_rows": {"benign": 1500, "tunnel": 2000}, "captures_by_category": {"normal": 68, "tunnel": 13}}),
+        encoding="utf-8")
+    line = rx.summary_line(path)
+    assert "81 captures" in line and "1,500 benign / 2,000 tunnel" in line and "not for evaluation" in line
+    assert "20.0 min" in line

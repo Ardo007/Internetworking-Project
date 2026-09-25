@@ -17,7 +17,7 @@ download GraphTunnel
                 └─ notebooks/dataset_splits.py      Data/processed/GraphTunnel/splits.csv (committed)
                     └─ notebooks/dns_tunneling_bilstm_model.ipynb
                         ├─ notebooks/dataset_zeek/     cached feature table (gitignored)
-                        ├─ models/zeek_bilstm/<name>/  models, scaler, features.json (gitignored)
+                        ├─ models/zeek_bilstm/<run>/<name>/  models, scaler, features.json (gitignored)
                         └─ results/zeek_run.md         metrics (committed)
 ```
 
@@ -28,7 +28,8 @@ Ardashes_scripts/capture_live.py -> datas/captures/<chunk>.pcapng   30 s ring-bu
 Ardashes_scripts/run_zeek.py     -> datas/zeek/<chunk>/dns.log
  └─ notebooks/zeek_feature_extraction.py    the same extractor; consecutive chunks are
      │                                      joined into 60 s windows before aggregating
-     └─ scoring against models/zeek_bilstm/<config>/   (scorer not built yet)
+     └─ scoring with the final model, models/zeek_bilstm/run4_default_50ep/final/
+                                                (scorer not built yet)
 ```
 
 Benign live sessions can also become training data, as category `own_benign`
@@ -230,7 +231,18 @@ configuration it trains it writes:
 
 `results/zeek_run.md` has one section per run, rendered from those files and
 the run's report settings (`results/runs/<run>/run.json`). Each section is
-replaced on its own, leaving earlier runs untouched.
+replaced on its own, leaving earlier runs untouched. The section at the top
+gathers the results at the default settings from the runs that trained them
+(`results/runs/run4_default_50ep/run.json`) and refuses any result trained with
+other settings.
+
+The **final model** (`run_experiments.py --final`, name `final`) is trained
+with the default settings on every capture: the capped rows of every window of
+all 105 captures, the unseen tools and platform included, with config B's
+validation rows (also training rows) for early stopping. It is not for
+evaluation: its `features.json` has `"not_for_evaluation": true`, its folder
+holds `NOT_FOR_EVALUATION.txt`, the scoring functions refuse it, and its
+`results/runs/<run>/final.json` has only training rows and loss histories.
 
 ## 7. Live capture pipeline
 

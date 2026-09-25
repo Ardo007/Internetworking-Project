@@ -5,12 +5,15 @@ Executes notebooks/dns_tunneling_bilstm_model.ipynb top to bottom in a fresh
 .venv kernel, with its settings overridden so that only the requested
 configurations are trained, and streams the notebook's output to the console:
 Keras' per-epoch progress, then each configuration's results. Build_model and
-the rest of the notebook run exactly as written.
+the rest of the notebook run exactly as written. --final trains the final
+model on every capture (not for evaluation: no metrics, only its training
+record).
 
 Examples, from the repo root:
 
   .\\.venv\\Scripts\\python.exe notebooks\\run_experiments.py --sanity
   .\\.venv\\Scripts\\python.exe notebooks\\run_experiments.py --run run3_default_50ep --epochs 50 --lofo DNS-shell
+  .\\.venv\\Scripts\\python.exe notebooks\\run_experiments.py --run run4_default_50ep --epochs 50 --final
 
 A configuration is done once results/runs/<run>/<name>.json exists; that file
 is written after the configuration's models are saved. Done configurations
@@ -20,7 +23,8 @@ no results file and is trained from scratch next time.
 
 Each invocation writes:
   models/zeek_bilstm/<run>/<name>/          models, scaler, label encoder, features.json
-  results/runs/<run>/<name>.json            metrics and per-epoch loss histories
+  results/runs/<run>/<name>.json            metrics and per-epoch loss histories (for the
+                                            final model: training rows and histories only)
   results/executed/<run>__<names>.ipynb     executed notebook copy (gitignored)
   results/executed/<run>__<names>.log       everything printed to the console (gitignored)
   results/executed/<run>__<names>.kernel.log   the kernel process's own warnings (gitignored)
@@ -41,8 +45,10 @@ EXECUTED_DIR = PROJECT_ROOT / "results" / "executed"
 SANITY_DIR = EXECUTED_DIR / "sanity"
 SETTINGS_CELL = "4d5a16f7"
 TUNNEL_FAMILIES = ("DNS-shell", "dnscat2", "dnspot", "iodine", "tuns")
-FEATURE_SETS = ("all_minus_artefact_suspect", "all", "lexical_only", "domain_volume_shape")
+FEATURE_SETS = ("all_minus_artefact_suspect", "all", "lexical_only", "domain_volume_shape",
+                "domain_volume_shape_minus_artefact_suspect")
 MAIN_CONFIGS = ("B", "A")
+FINAL = "final"
 
 
 def parse_args(argv=None):
@@ -54,6 +60,8 @@ def parse_args(argv=None):
                         help="train config B with these feature sets (names B-<set>)")
     parser.add_argument("--lofo", nargs="+", choices=TUNNEL_FAMILIES, default=[],
                         help="leave-one-tunnel-family-out folds to train (names lofo-<family>)")
+    parser.add_argument("--final", action="store_true",
+                        help="train the final model on every capture (name final; not for evaluation)")
     parser.add_argument("--epochs", type=int, help="epoch cap passed to Build_model (default: the notebook's)")
     parser.add_argument("--models", type=int, default=5, help="models per configuration (default 5)")
     parser.add_argument("--feature-set", choices=FEATURE_SETS,
@@ -63,8 +71,8 @@ def parse_args(argv=None):
     parser.add_argument("--overwrite", action="store_true",
                         help="retrain configurations that already have results, replacing them")
     parser.add_argument("--sanity", action="store_true",
-                        help="quick setup check: 1 model, 1 epoch, fold dnscat2 unless --lofo is given, "
-                             "written to results/executed/sanity/")
+                        help="quick setup check: 1 model, 1 epoch, fold dnscat2 unless something else is "
+                             "given, written to results/executed/sanity/")
     parser.add_argument("--dry-run", action="store_true", help="print the plan and the settings, train nothing")
     parser.add_argument("--notebook", type=Path, default=NOTEBOOK, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
@@ -74,12 +82,12 @@ def parse_args(argv=None):
         args.epochs = 1 if args.epochs is None else args.epochs
         args.models = 1
         args.overwrite = True
-        if not (args.configs or args.ablations or args.lofo):
+        if not (args.configs or args.ablations or args.lofo or args.final):
             args.lofo = ["dnscat2"]
     if not args.run:
         parser.error("--run is required (or use --sanity)")
-    if not (args.configs or args.ablations or args.lofo):
-        parser.error("nothing to train: give --configs, --ablations and/or --lofo")
+    if not (args.configs or args.ablations or args.lofo or args.final):
+        parser.error("nothing to train: give --configs, --ablations, --lofo and/or --final")
     if args.models < 1 or (args.epochs is not None and args.epochs < 1):
         parser.error("--models and --epochs must be at least 1")
     return args
@@ -94,7 +102,7 @@ def output_roots(args):
 
 def configuration_names(args):
     return (list(args.configs) + [f"B-{fs}" for fs in args.ablations]
-            + [f"lofo-{family}" for family in args.lofo])
+            + [f"lofo-{family}" for family in args.lofo] + ([FINAL] if args.final else []))
 
 
 def plan(args):
@@ -116,6 +124,7 @@ def override_code(args, to_train):
         f"RUN_CONFIGS = {[n for n in to_train if n in MAIN_CONFIGS]!r}",
         f"RUN_ABLATION_SETS = {[n.removeprefix('B-') for n in to_train if n.startswith('B-')]!r}",
         f"RUN_LOFO_FAMILIES = {[n.removeprefix('lofo-') for n in to_train if n.startswith('lofo-')]!r}",
+        f"RUN_FINAL = {FINAL in to_train}",
         f"N_OF_MODELS = {args.models}",
         f"TRAINING_VERBOSE = {args.verbose}",
         f"MODELS_ROOT = Path({str(models_root)!r})",
@@ -127,8 +136,8 @@ def override_code(args, to_train):
     if args.feature_set:
         lines.append(f"FEATURE_SET = {args.feature_set!r}")
     lines.append('print(f"settings overridden by run_experiments.py: run {RUN_NAME}, configs {RUN_CONFIGS}, '
-                 'ablations {RUN_ABLATION_SETS}, folds {RUN_LOFO_FAMILIES}, epoch cap {EPOCH_CAP}, '
-                 'feature set {FEATURE_SET}, {N_OF_MODELS} models each")')
+                 'ablations {RUN_ABLATION_SETS}, folds {RUN_LOFO_FAMILIES}, final model {RUN_FINAL}, '
+                 'epoch cap {EPOCH_CAP}, feature set {FEATURE_SET}, {N_OF_MODELS} models each")')
     return "\n".join(lines) + "\n"
 
 
@@ -224,6 +233,12 @@ def run_notebook(notebook_path, overrides, executed_path, console, kernel_log_pa
 
 def summary_line(path):
     result = json.loads(Path(path).read_text(encoding="utf-8"))
+    if result.get("not_for_evaluation"):
+        rows = result.get("train_rows") or {}
+        return (f"{result['name']}: epochs {result.get('epochs')}, trained on "
+                f"{sum((result.get('captures_by_category') or {}).values())} captures, "
+                f"{rows.get('benign', 0):,} benign / {rows.get('tunnel', 0):,} tunnel rows, "
+                f"not for evaluation, {result.get('seconds', 0) / 60:.1f} min")
     summary = result["summary"]
     wanted = (["held_out_family", "fpr_normal", "fpr_wildcard"] if result["name"].startswith("lofo-")
               else ["test_accuracy", "fpr_normal", "fpr_wildcard", "unseen_tool", "unseen_platform"])

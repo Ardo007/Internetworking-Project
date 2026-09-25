@@ -275,6 +275,17 @@ def test_fit_sample_mask_only_samples_train_and_val():
     assert mask.groupby([df["capture_id"], df["window_id"]]).sum().tolist() == [4, 0, 0, 7]
     kept = ds.cap_rows_per_window(df, CAPS, seed=1).index
     assert set(mask[mask].index) <= set(kept)
+    # the same rows cap_mask keeps, restricted to train and val
+    capped = ds.cap_mask(df, CAPS, seed=1)
+    in_fit = assignment["split"].isin(["train", "val"]).fillna(False).astype(bool)
+    assert mask.equals(capped & in_fit)
+
+
+def test_cap_mask_covers_every_split_and_gap_window():
+    df = sampling_frame()
+    capped = ds.cap_mask(df, CAPS, seed=1)
+    assert capped.groupby([df["capture_id"], df["window_id"]]).sum().tolist() == [4, 4, 2, 7]
+    assert sorted(capped[capped].index) == sorted(ds.cap_rows_per_window(df, CAPS, seed=1).index)
 
 
 def test_split_counts(splits):

@@ -476,6 +476,41 @@ Share of rows whose domain has more than one query type in its 60 s window (`dom
 | AndIodine-SRV | 14,769 | 0.41% |
 | AndIodine-TXT | 10,217 | 0.00% |
 
+### What the query-type count does in the 30-feature models
+
+Inference only, no retraining: run 1's saved models (all 30 features) scored with `domain_qtype_diversity`, the number of query types asked for the row's domain in its 60 s window, set to one value on every scored row; every other input stays as recorded. 1 is what the normal crawl and every tunnel family show, 2 is the wildcard captures' A + AAAA, 3 is a client asking A, AAAA and HTTPS for the same name.
+
+Config `B` models (`models/zeek_bilstm/B/`), average over their 5 models:
+
+| metric | as recorded | set to 1 | set to 2 | set to 3 |
+|---|---|---|---|---|
+| FPR held-out normal | 0.01% | 0.01% | 0.00% | 0.00% |
+| FPR held-out wildcard (all held-out captures) | 0.00% | 25.16% | 0.00% | 0.00% |
+| Recall unseen tools (unknownTunnel) | 97.09% | 99.96% | 0.02% | 0.00% |
+| &nbsp;&nbsp;ozymandns | 19.91% | 100.00% | 0.28% | 0.00% |
+| &nbsp;&nbsp;cobalstrike | 92.45% | 99.38% | 0.11% | 0.00% |
+| Recall unseen platform (crossEndPoint, iodine on Android) | 99.39% | 99.44% | 2.84% | 0.11% |
+
+Fold models (`models/zeek_bilstm/<name>/`), average over their 5 models:
+
+| fold | as recorded | set to 1 | set to 2 | set to 3 |
+|---|---|---|---|---|
+| DNS-shell recall | 6.47% | 6.47% | 0.40% | 0.10% |
+| &nbsp;&nbsp;FPR normal | 0.00% | 0.00% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR wildcard | 0.01% | 7.39% | 0.01% | 0.00% |
+| dnscat2 recall | 99.95% | 99.95% | 85.38% | 0.00% |
+| &nbsp;&nbsp;FPR normal | 0.00% | 0.00% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR wildcard | 0.00% | 12.17% | 0.00% | 0.00% |
+| dnspot recall | 4.10% | 4.10% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR normal | 0.00% | 0.00% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR wildcard | 0.00% | 21.31% | 0.00% | 0.00% |
+| iodine recall | 58.23% | 58.23% | 3.24% | 0.00% |
+| &nbsp;&nbsp;FPR normal | 0.00% | 0.00% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR wildcard | 0.30% | 3.40% | 0.30% | 0.21% |
+| tuns recall | 99.97% | 99.97% | 23.75% | 0.00% |
+| &nbsp;&nbsp;FPR normal | 0.01% | 0.01% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR wildcard | 0.01% | 36.39% | 0.01% | 0.00% |
+
 ### Training length
 
 | fold | stopped | best | best val loss |
@@ -496,6 +531,7 @@ Share of rows whose domain has more than one query type in its 60 s window (`dom
 6. **Recommendation: keep the 28-feature default (`all_minus_artefact_suspect`).**
    - `no_response_ratio` contributes nothing measurable in any fold or in config B, and its GraphTunnel values reflect how the wildcard capture was recorded (about half of its queries unanswered).
    - `domain_qtype_diversity` buys unseen-family recall through a shortcut tied to how the wildcard traffic was generated, and the same shortcut lets any tunnel that mixes record types pass as benign, an evasion ozymandns already shows. Without it the model keeps 0.00% false positives on held-out normal and wildcard and finds all of ozymandns.
+   - **The 62.88% is optimistic in a way the 56.16% is not.** The shortcut only works because GraphTunnel's benign crawl asks for A records (99.99% of its rows), which leaves the wildcard captures (A + AAAA) as the only traffic with more than one query type per domain window; every tunnel family asks for one. Run 1's 30-feature models follow that count almost completely (see *What the query-type count does in the 30-feature models*). Set to 2 or 3, it turns their verdicts to benign: config B's unseen-tool recall falls from 97.09% to 0.02% and 0.00%, the iodine fold's from 58.23% to 3.24% and 0.00%, and at 3 no fold finds more than 0.10% of its held-out family. Set to 1, it makes them flag 25.16% of held-out wildcard in config B and 3.40–36.39% in the folds. Real clients ask for A, AAAA and HTTPS records for ordinary names all the time, so in live traffic the count no longer singles out one kind of benign traffic. The ordinary lookups themselves are not the problem: with the count at 2 or 3 the models flag 0.00% of held-out normal. The problem is benign names that look unusual but are asked for with one record type in their window, which the models would flag, and tunnels whose domain also gets an AAAA or HTTPS query, which they would miss. GraphTunnel contains neither, so it can't show those false positives and misses. The 28-feature models never see the count.
    - The cost is lower unseen-family recall (56.16% against 62.88% over the five folds), mostly iodine NULL and private. That is better addressed with training data, such as more tunnel families and record types, or realistic benign traffic whose clients ask for A, AAAA and HTTPS records (the `own_benign` captures), than with this feature.
    - If unseen-family recall matters more than that evasion, the alternative is to drop only `no_response_ratio` (29 features). The neutralisation results suggest it would recover most of the iodine recall and miss most of ozymandns again, but that set hasn't been trained.
 7. **Model selection can't see generalisation to the held-out family.** In these folds the validation rows come only from the four trained-on families and from benign traffic, so `val_accuracy` is about 1.0000 from the first epoch and the validation loss keeps falling (by about 30% between epochs 50 and 150 in run 2) while held-out-family recall stays flat or drops. Early stopping and the best-epoch weights therefore optimise the fit to known tools only. A selection signal for unseen families would need another family held out of training for validation (nested leave-one-family-out), at roughly four times the training cost.

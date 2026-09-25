@@ -42,8 +42,8 @@ Then train, in either of two ways:
 
 - **In the notebook:** run `dns_tunneling_bilstm_model.ipynb` top to bottom.
   It trains what its settings cell lists (`RUN_NAME`, `RUN_CONFIGS`,
-  `RUN_ABLATION_SETS`, `RUN_LOFO_FAMILIES`, `FEATURE_SET`, `EPOCH_CAP`,
-  `N_OF_MODELS`).
+  `RUN_ABLATION_SETS`, `RUN_LOFO_FAMILIES`, `RUN_FINAL`, `FEATURE_SET`,
+  `EPOCH_CAP`, `N_OF_MODELS`).
 - **From the command line, one configuration or fold per command**, with
   Keras' progress for every epoch:
 
@@ -51,12 +51,13 @@ Then train, in either of two ways:
   .\.venv\Scripts\python.exe notebooks\run_experiments.py --sanity                     # 1-2 min setup check
   .\.venv\Scripts\python.exe notebooks\run_experiments.py --run <name> --epochs 50 --configs B
   .\.venv\Scripts\python.exe notebooks\run_experiments.py --run <name> --epochs 50 --lofo iodine
+  .\.venv\Scripts\python.exe notebooks\run_experiments.py --run <name> --epochs 50 --final
   ```
 
   This runs the same notebook with its settings overridden. A configuration
   whose results already exist is skipped (`--overwrite` retrains it), so an
-  interrupted series can simply be re-run. `results/run3_runbook.md` is a worked
-  example.
+  interrupted series can simply be re-run. `results/run3_runbook.md` and
+  `results/run4_runbook.md` are worked examples.
 
 On first use the feature table is built (about 50 s for 1.9 M records) and
 cached in `dataset_zeek/`. It is rebuilt only when the Zeek logs, `splits.csv`,
@@ -96,6 +97,23 @@ Every training run has a name. For each configuration it trained there is:
 | `run1_all_50ep` | 30 (`all`) | 50 | B, A, three ablations, five folds | `models/zeek_bilstm/<name>/` |
 | `run2_default_150ep` | 28 (default) | 150 | B, five folds | `models/zeek_bilstm/run2_default_150ep/<name>/` |
 | `run3_default_50ep` | 28 (default) | 50 | five folds | `models/zeek_bilstm/run3_default_50ep/<name>/` |
+| `run4_default_50ep` | 28 (default) | 50 | A, the domain volume/shape ablation, the final model | `models/zeek_bilstm/run4_default_50ep/<name>/` |
+
+The results at the default settings (28 features, epoch cap 50) come from
+three runs: config B and the `lexical_only` ablation from run 1 (trained with
+the same features, rows and settings), the folds from run 3, and the rest from
+run 4. `results/runs/run4_default_50ep/run.json` lists them, and
+`write_run_report("run4_default_50ep")` writes them as one section at the top
+of `results/zeek_run.md`, refusing any result with other settings.
+
+**The final model** (`models/zeek_bilstm/run4_default_50ep/final/`) is trained
+with the default settings on every capture, including the unseen tools and
+platform, so it is **not for evaluation**: nothing in GraphTunnel is left that
+it hasn't seen. Its `features.json` has `"not_for_evaluation": true`, the folder
+holds `NOT_FOR_EVALUATION.txt`, the scoring functions refuse it, and
+`results/runs/run4_default_50ep/final.json` has only its training rows and
+loss histories. It is the model to score live traffic with; config B is its
+evaluated counterpart.
 
 ## Current status
 
@@ -123,7 +141,11 @@ What the runs show (details in `results/zeek_run.md`):
   from 62.9% to 56.2% (mostly iodine's NULL and private captures). Run 3 traced
   both effects to `domain_qtype_diversity`. In GraphTunnel it only marks the
   wildcard captures, and it lets any tunnel that mixes query types pass as
-  benign, as ozymandns does, so the default leaves it out.
+  benign, as ozymandns does, so the default leaves it out. The 62.9% is also
+  optimistic: the 30-feature models' verdicts follow that query-type count
+  almost completely, a pattern real clients (which ask A, AAAA and HTTPS for
+  ordinary names) don't share, so GraphTunnel can't show what it would cost
+  on live traffic.
 - **Training longer doesn't help.** 150 epochs lowered the validation loss by
   about 30% but didn't improve held-out results, so the cap stays at 50.
   Validation data only contains known tools, so it can't show when a model
@@ -137,10 +159,11 @@ What the runs show (details in `results/zeek_run.md`):
 
 ## Next steps
 
-- Retrain config A, the ablations and a final model on all 105 captures with
-  the default settings (on hold until the run-3 results are reviewed).
-- Score live traffic with a saved model (`datas/zeek/<chunk>/` → the same
-  extractor → a model folder).
+- Run 4 (`results/run4_runbook.md`): config A, the domain volume/shape
+  ablation and the final model at the default settings; then the results
+  section at the default settings in `results/zeek_run.md`.
+- Score live traffic with the final model (`datas/zeek/<chunk>/` → the same
+  extractor → `models/zeek_bilstm/run4_default_50ep/final/`).
 - Improve generalisation to unseen families with data rather than features:
   more tunnel families and record types, and realistic benign traffic from the
   live pipeline (`own_benign`). A validation set that holds out a family too
