@@ -1239,7 +1239,11 @@ def render_default_results(title, configurations, description=(), final=None, fi
         git = record.get("git") or {}
         n_models = len(record.get("epochs") or [])
         model_files = "`model_1.keras`" + (f" … `model_{n_models}.keras`" if n_models > 1 else "")
-        out += ["### Final model (not for evaluation)", "", record.get("note", FINAL_MODEL_NOTE), "",
+        out += ["### Final model (not for evaluation)", "",
+                "Trained on every GraphTunnel capture, including the unseen tools (unknownTunnel) and the unseen "
+                "platform (crossEndPoint), so no GraphTunnel data is left that it hasn't been trained on, and it has "
+                "no results here. It is the model for scoring new traffic; config B above is its evaluated "
+                "counterpart.", "",
                 f"- Saved to `{record.get('models_dir')}`: {model_files}, `scaler.joblib`, `label_encoder.joblib`, "
                 "`features.json` (`\"not_for_evaluation\": true`) and `NOT_FOR_EVALUATION.txt`. The scoring "
                 "functions in `zeek_experiments` refuse to score it.",

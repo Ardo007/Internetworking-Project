@@ -401,7 +401,7 @@ def test_render_default_results(tmp_path, monkeypatch):
     assert "| `all` (the default) | 28 (2) |" in text and "| `lexical_only` | 11 (2) |" in text
     assert "| **all five (row-weighted)** | 400 | **52.50%** |" in text   # (300 * 0.4 + 100 * 0.9) / 400
     assert "| iodine | iodine-NULL | 20.00% (20.00% – 20.00%) |" in text
-    assert "### Final model (not for evaluation)" in text and "the final note" in text
+    assert "### Final model (not for evaluation)" in text and "no results here" in text
     assert "`models/zeek_bilstm/new/final/`" in text and "| **total** | **81** | **30** |" in text
     assert "### Findings" in text and "1. a finding" in text
 

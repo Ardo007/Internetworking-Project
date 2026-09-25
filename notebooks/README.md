@@ -119,22 +119,27 @@ evaluated counterpart.
 
 The defaults are the 28-feature set `all_minus_artefact_suspect`, an epoch cap
 of 50 and config B (wildcard hard negatives in training). With those settings,
-average over 5 models (config B from run 1's `B-all_minus_artefact_suspect`
-ablation, the folds from run 3):
+average over 5 models (the full tables are in the section at the top of
+`results/zeek_run.md`):
 
-| metric | value |
-|---|---|
-| In-distribution test accuracy | 99.99% |
-| False positive rate, held-out normal | 0.00% |
-| False positive rate, held-out wildcard (00007–00012) | 0.00% |
-| Recall, unseen tools (unknownTunnel) | 99.18% (ozymandns 100%, cobalstrike 88.1%) |
-| Recall, unseen platform (iodine on Android) | 99.60% |
-| Recall, unseen tunnel families (leave-one-family-out, all rows) | 56.16% |
+| metric | config B | config A |
+|---|---|---|
+| In-distribution test accuracy | 99.99% | 99.99% |
+| False positive rate, held-out normal | 0.00% | 0.00% |
+| False positive rate, held-out wildcard (00007–00012) | 0.00% | 51.63% |
+| Recall, unseen tools (unknownTunnel) | 99.18% (ozymandns 100%, cobalstrike 88.1%) | 99.96% |
+| Recall, unseen platform (iodine on Android) | 99.60% | 99.49% |
+| Recall, unseen tunnel families (leave-one-family-out, all rows) | 56.16% | – |
 
 What the runs show (details in `results/zeek_run.md`):
 
-- **Wildcard hard negatives keep false positives near zero.** Without them
-  (config A) 14–21% of held-out wildcard traffic is called tunnelling.
+- **Wildcard hard negatives are what keep false positives at zero.** Without
+  them (config A) the default model calls 52–56% of held-out wildcard traffic
+  tunnelling. Run 1's 30-feature config A flagged 14–21%, but only because of
+  `domain_qtype_diversity` (see below).
+- **Neither feature group alone matches the default.** Lexical features alone
+  find slightly more unseen tools but flag 0.51% of held-out wildcard. The
+  domain volume/shape features alone miss a quarter of dns2tcp-key.
 - **The feature set is a trade-off, decided by one feature.** Dropping
   `domain_qtype_diversity` and `no_response_ratio` raised unseen-tool recall
   from 97.1% to 99.2% (ozymandns 19.9% → 100%) but lowered unseen-family recall
@@ -154,14 +159,10 @@ What the runs show (details in `results/zeek_run.md`):
   training, dnscat2 and tuns are still found (98–99%), iodine only partly (42%)
   and DNS-shell and dnspot hardly at all (under 1%).
 - **Sparse windows are the other one.** In windows with fewer than 10 queries,
-  unseen-tool recall is about 18–28%, against over 97% in windows of 100 or
-  more.
+  unseen-tool recall is about 20%, against over 99% in windows of 100 or more.
 
 ## Next steps
 
-- Run 4 (`results/run4_runbook.md`): config A, the domain volume/shape
-  ablation and the final model at the default settings; then the results
-  section at the default settings in `results/zeek_run.md`.
 - Score live traffic with the final model (`datas/zeek/<chunk>/` → the same
   extractor → `models/zeek_bilstm/run4_default_50ep/final/`).
 - Improve generalisation to unseen families with data rather than features:
