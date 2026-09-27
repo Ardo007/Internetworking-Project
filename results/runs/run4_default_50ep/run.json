@@ -1,0 +1,29 @@
+{
+ "layout": "defaults",
+ "section": "defaults",
+ "title": "Results at the default settings",
+ "description": [
+  "The model's results with the defaults chosen in runs 1–3: the 28-feature set `all_minus_artefact_suspect`, an epoch cap of 50 and, for the primary model, config B. Each result is taken from the run that trained it (see the table below), and each is checked against these settings before it is shown here. The run sections further down record how the defaults were chosen: run 1 (all 30 features, directly below this section), run 2 (150 epochs) and run 3 (the feature set on unseen tunnel families, and why 28 features rather than 30).",
+  "",
+  "Config B and the `lexical_only` ablation are run 1's `B-all_minus_artefact_suspect` and `B-lexical_only`, reused rather than retrained. They have the same features, training and validation rows (their saved scalers match scalers fitted on today's training rows exactly), hyperparameters and epoch cap. Run 1 set the random seed once per notebook run rather than before each configuration, so their starting weights differ from what a fresh run would draw. That is the same kind of difference as between the five models of one configuration. The leave-one-family-out folds are run 3's. Config A, the `domain_volume_shape_minus_artefact_suspect` ablation (run 1's `domain_volume_shape` included `domain_qtype_diversity`) and the final model were trained in run 4."
+ ],
+ "configurations": [
+  {"name": "B", "run": "run1_all_50ep", "result": "B-all_minus_artefact_suspect", "note": "run 1, reused"},
+  {"name": "A", "run": "run4_default_50ep", "result": "A"},
+  {"name": "B-lexical_only", "run": "run1_all_50ep", "result": "B-lexical_only", "note": "run 1, reused"},
+  {"name": "B-domain_volume_shape_minus_artefact_suspect", "run": "run4_default_50ep", "result": "B-domain_volume_shape_minus_artefact_suspect"},
+  {"name": "lofo-DNS-shell", "run": "run3_default_50ep", "result": "lofo-DNS-shell"},
+  {"name": "lofo-dnscat2", "run": "run3_default_50ep", "result": "lofo-dnscat2"},
+  {"name": "lofo-dnspot", "run": "run3_default_50ep", "result": "lofo-dnspot"},
+  {"name": "lofo-iodine", "run": "run3_default_50ep", "result": "lofo-iodine"},
+  {"name": "lofo-tuns", "run": "run3_default_50ep", "result": "lofo-tuns"}
+ ],
+ "final": {"run": "run4_default_50ep", "result": "final"},
+ "findings": [
+  "1. **On known traffic and unseen tools the default model is close to perfect; unseen tunnel families are its weak spot.** Config B reaches 99.99% in-distribution test accuracy with 0.00% false positives on held-out normal and wildcard, and finds 99.18% of unseen-tool rows and 99.60% of unseen-platform rows. The gaps are cobalstrike (88.13%) and tunnel families it has never seen: over the five leave-one-family-out folds it finds 56.16% of the held-out family's rows, from 98–99% for dnscat2 and tuns down to 42.07% for iodine and under 1% for DNS-shell and dnspot.",
+  "2. **Without wildcard hard negatives (config A) the default model calls about half of the wildcard traffic tunnelling.** It flags 55.65% of all 13 held-out wildcard captures (39.37–82.71% across its five models) and 51.63% of 00007–00012, where config B flags 0.00%. Run 1's 30-feature config A flagged 20.68%, but only because of `domain_qtype_diversity`: with it set to 1 on every row, run 1's A models flag 72.81% (`results/runs/run4_default_50ep/diagnostics/config_a_query_type_count.json`). At 28 features, config A therefore shows the real dependence. The model recognises wildcard-style benign traffic only if it has seen some in training, which is what config B provides. In exchange, config A finds more of the unseen tools (99.96% against config B's 99.18%, cobalstrike 99.41% against 88.13%), so learning to pass wildcard traffic costs config B some unseen-tool recall, most of it on cobalstrike.",
+  "3. **Neither feature group alone matches the default.** `lexical_only` (11 features) finds more unseen-tool rows (99.81%) but flags 0.51% of held-out wildcard; the default flags none. The 10 per-domain volume and shape features keep false positives at 0.00% (wildcard) and 0.02% (normal) but find only 96.49% of unseen-tool rows (94.37–98.95%), mostly because of dns2tcp-key (73.38%). They also fit worst: early stopping ended training after 7–15 epochs, with the best validation loss at 3.8e-03 to 8.1e-03, about ten times config B's (3.2e-04 to 5.7e-04 at epoch 50 in run 2). Without `domain_qtype_diversity`, the domain features find all of ozymandns, against 40.03% for run 1's 11-feature version.",
+  "4. **Sparse windows remain a blind spot.** In config B, unseen-tool recall is 20.28% for rows whose 60 s window holds fewer than 10 queries, 91.42% for 10–99 queries and 99.34% for 100 or more. The sparse buckets are small (141 unseen-tool rows, 16 unseen-platform rows, 22 in-distribution tunnel rows), but live traffic from a slow or careful tunnel would fall into them.",
+  "5. **The final model trained normally and is not evaluated.** Its five models trained on 539,480 rows from all 105 captures. Unlike the runbook's expectation of 50 epochs, early stopping ended each one after 25–44 epochs, keeping the weights of epochs 20–39. By then the learning rate had been cut to its 1e-05 floor (from epochs 25–30), and the validation loss on rows the model also trains on had stopped improving: the training had converged on those rows. Those rows can't show overfitting. Config B is its evaluated counterpart. The final model has also seen the test segments, the held-out captures and the unseen tools and platform, so config B's numbers describe it only approximately, and none of them measure how it does on new traffic."
+ ]
+}

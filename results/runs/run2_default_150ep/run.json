@@ -1,0 +1,19 @@
+{
+ "title": "Run 2: default features without the artefact-suspect pair, epoch cap 150",
+ "description": [
+  "Two changes from run 1, and a targeted re-run (config B and the leave-one-family-out folds; config A, the ablations and the final model are not retrained yet):",
+  "",
+  "1. **Default feature set: `all_minus_artefact_suspect`** (28 features; `domain_qtype_diversity` and `no_response_ratio` left out). In run 1's config B ablation, dropping them raised recall on unseen tools from 97.09% (97.07–97.13) to 99.18% (99.11–99.22) and on the unseen platform from 99.39% to 99.60%, with false positive rates on held-out normal 0.01% → 0.00% and held-out wildcard 0.00% → 0.00%. Both features are still computed and form part of the `all` feature set.",
+  "2. **Epoch cap 50 → 150**, early-stopping patience and everything else in `Build_model` unchanged: 40 of the 50 run-1 models hit the cap, including all 10 config A and B models (early stopping fired only in some ablation and dnscat2-fold models). Run 1's config B loss curves, from its notebook output: ![run 1 config B loss](figures/run1_all_50ep_B_loss.png)",
+  "",
+  "Each configuration now reseeds (seed 0) before training. For config B the run-1 ablation column (same 28 features, 50 epochs) isolates the effect of the longer training; the leave-one-family-out comparison changes both at once. The run-1 columns were re-scored from the saved run-1 models and match the tables above."
+ ],
+ "reference_name": "run1_all_50ep",
+ "run_label": "run 2",
+ "reference_label": "run 1",
+ "extra_reference": {
+  "B": [
+   "B-all_minus_artefact_suspect"
+  ]
+ }
+}

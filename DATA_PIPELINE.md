@@ -17,7 +17,7 @@ download GraphTunnel
                 └─ notebooks/dataset_splits.py      Data/processed/GraphTunnel/splits.csv (committed)
                     └─ notebooks/dns_tunneling_bilstm_model.ipynb
                         ├─ notebooks/dataset_zeek/     cached feature table (gitignored)
-                        ├─ models/zeek_bilstm/<name>/  models, scaler, features.json (gitignored)
+                        ├─ models/zeek_bilstm/<run>/<name>/  models, scaler, features.json (gitignored)
                         └─ results/zeek_run.md         metrics (committed)
 ```
 
@@ -28,7 +28,8 @@ Ardashes_scripts/capture_live.py -> datas/captures/<chunk>.pcapng   30 s ring-bu
 Ardashes_scripts/run_zeek.py     -> datas/zeek/<chunk>/dns.log
  └─ notebooks/zeek_feature_extraction.py    the same extractor; consecutive chunks are
      │                                      joined into 60 s windows before aggregating
-     └─ scoring against models/zeek_bilstm/<config>/   (scorer not built yet)
+     └─ scoring with the final model, models/zeek_bilstm/run4_default_50ep/final/
+                                                (scorer not built yet)
 ```
 
 Benign live sessions can also become training data, as category `own_benign`
@@ -82,8 +83,7 @@ names cause an error rather than a guessed label. Original PCAPs and existing
 Zeek logs are never modified.
 
 The manifest is the single source of truth for which captures exist and what
-they are labelled. (The placeholder
-`testAndEval/TestingAndEval/capture_manifest.csv` is unrelated and unused.)
+they are labelled.
 
 ## 3. Out-of-order PCAPs are time-sorted before Zeek
 
@@ -174,8 +174,7 @@ chunk folders into capture sessions.
 
 ## 5. Splits
 
-`notebooks/dataset_splits.py` is the project's only split rule (the old
-row-level `testAndEval/TestingAndEval/split_dataset.py` was removed). Run it
+`notebooks/dataset_splits.py` is the project's only split rule. Run it
 after the Zeek logs are in place:
 
 ```text
@@ -211,16 +210,37 @@ has finished. None exist yet. Note that `capture_live.py` keeps only the last
 
 ## 6. Training and results
 
-Open `notebooks/dns_tunneling_bilstm_model.ipynb` and run it top to bottom
-(see `notebooks/README.md` for the environment). It caches the feature table in
-`notebooks/dataset_zeek/`, trains the configurations and writes:
+Train with `notebooks/dns_tunneling_bilstm_model.ipynb`, either top to bottom
+in Jupyter/VS Code or one configuration at a time from the command line with
+`notebooks/run_experiments.py`, which runs the same notebook and shows the
+progress of every epoch (see `notebooks/README.md` and the worked example in
+`results/run3_runbook.md`). The feature table is cached in
+`notebooks/dataset_zeek/`. Each training run has a name, and for every
+configuration it trains it writes:
 
-- `models/zeek_bilstm/<name>/` — one folder per configuration with
-  `model_*.keras`, `scaler.joblib`, `label_encoder.joblib` and `features.json`
-  (feature order, one-hot input columns, window length, row caps, sampling
-  seed, training date, git commit and library versions). Gitignored:
-  regenerate by running the notebook.
-- `results/zeek_run.md` — the metrics of the run, committed.
+- `models/zeek_bilstm/<run>/<name>/`: `model_*.keras`, `scaler.joblib`,
+  `label_encoder.joblib` and `features.json` (feature order, one-hot input
+  columns, window length, row caps, sampling seed, training date, git commit
+  and library versions). Gitignored: regenerate by re-running the run's
+  configurations. Run 1's models are directly under `models/zeek_bilstm/<name>/`.
+- `results/runs/<run>/<name>.json`: metrics and per-epoch loss histories,
+  committed. It is written last, so its presence marks the configuration as
+  done.
+
+`results/zeek_run.md` has one section per run, rendered from those files and
+the run's report settings (`results/runs/<run>/run.json`). Each section is
+replaced on its own, leaving earlier runs untouched. The section at the top
+gathers the results at the default settings from the runs that trained them
+(`results/runs/run4_default_50ep/run.json`) and refuses any result trained with
+other settings.
+
+The **final model** (`run_experiments.py --final`, name `final`) is trained
+with the default settings on every capture: the capped rows of every window of
+all 105 captures, the unseen tools and platform included, with config B's
+validation rows (also training rows) for early stopping. It is not for
+evaluation: its `features.json` has `"not_for_evaluation": true`, its folder
+holds `NOT_FOR_EVALUATION.txt`, the scoring functions refuse it, and its
+`results/runs/<run>/final.json` has only training rows and loss histories.
 
 ## 7. Live capture pipeline
 

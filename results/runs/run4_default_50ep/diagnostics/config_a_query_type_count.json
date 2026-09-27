@@ -1,0 +1,332 @@
+{
+ "title": "The query-type count in run 1's config A",
+ "description": "Inference only, no retraining: run 1's config A models (all 30 features) scored with `domain_qtype_diversity` set to one value on every scored row, every other input as recorded. The held-out wildcard captures ask A + AAAA (2); setting them to 1 asks whether the count is what kept run 1's config A from flagging more of them.",
+ "models": "models/zeek_bilstm/<name>/",
+ "feature": "domain_qtype_diversity",
+ "values": [
+  1,
+  2
+ ],
+ "results": {
+  "A": [
+   {
+    "variant": "as recorded",
+    "value": null,
+    "summary": {
+     "test_accuracy": {
+      "min": 0.9999265072145418,
+      "avg": 0.999928140387552,
+      "max": 0.9999346730795927
+     },
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": 0.0,
+      "avg": 7.619047619047619e-06,
+      "max": 9.523809523809523e-06
+     },
+     "test_tunnel": {
+      "min": 0.9995418360918619,
+      "avg": 0.9995418360918619,
+      "max": 0.9995418360918619
+     },
+     "fpr_normal": {
+      "min": 7.869162065392736e-05,
+      "avg": 9.442994478471284e-05,
+      "max": 0.00010492216087190316
+     },
+     "fpr_wildcard": {
+      "min": 0.07187675669887839,
+      "avg": 0.20680140268222824,
+      "max": 0.3813047086222127
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.021323588219732625,
+      "avg": 0.14163513654848256,
+      "max": 0.2889081658391933
+     },
+     "unseen_tool": {
+      "min": 0.9707067258449983,
+      "avg": 0.9709935131444178,
+      "max": 0.9720759734775656
+     },
+     "unseen_platform": {
+      "min": 0.9929007460999322,
+      "avg": 0.9937719496570955,
+      "max": 0.9941970005275454
+     },
+     "unseen_tool/cobalstrike": {
+      "min": 0.9230919637619761,
+      "avg": 0.9281757153099133,
+      "max": 0.9479241347845924
+     },
+     "unseen_tool/dns2tcp-key": {
+      "min": 0.9997684850238749,
+      "avg": 0.999820575893503,
+      "max": 1.0
+     },
+     "unseen_tool/dns2tcp-txt": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "unseen_tool/ozymandns": {
+      "min": 0.1962368694447651,
+      "avg": 0.1962368694447651,
+      "max": 0.1962368694447651
+     },
+     "unseen_tool/tcp-over-dns-CNAME": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "unseen_tool/tcp-over-dns-TXT": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "unseen_platform/AndIodine-CNAME": {
+      "min": 0.9964426038016353,
+      "avg": 0.9964426038016352,
+      "max": 0.9964426038016353
+     },
+     "unseen_platform/AndIodine-MX": {
+      "min": 0.9948525044545634,
+      "avg": 0.9950504850524649,
+      "max": 0.9952484656503663
+     },
+     "unseen_platform/AndIodine-NULL": {
+      "min": 0.9886055344546935,
+      "avg": 0.9886055344546933,
+      "max": 0.9886055344546935
+     },
+     "unseen_platform/AndIodine-SRV": {
+      "min": 0.9882185659150924,
+      "avg": 0.9921998781230957,
+      "max": 0.9943124111314239
+     },
+     "unseen_platform/AndIodine-TXT": {
+      "min": 0.9929529216012528,
+      "avg": 0.9929529216012527,
+      "max": 0.9929529216012528
+     }
+    }
+   },
+   {
+    "variant": "set to 1",
+    "value": 1,
+    "summary": {
+     "test_accuracy": {
+      "min": 0.9999265072145418,
+      "avg": 0.999928140387552,
+      "max": 0.9999346730795927
+     },
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": 0.0,
+      "avg": 7.619047619047619e-06,
+      "max": 9.523809523809523e-06
+     },
+     "test_tunnel": {
+      "min": 0.9995418360918619,
+      "avg": 0.9995418360918619,
+      "max": 0.9995418360918619
+     },
+     "fpr_normal": {
+      "min": 7.869162065392736e-05,
+      "avg": 9.442994478471284e-05,
+      "max": 0.00010492216087190316
+     },
+     "fpr_wildcard": {
+      "min": 0.5680541799395027,
+      "avg": 0.7280777364349386,
+      "max": 0.8588002248574564
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.5224955857834542,
+      "avg": 0.6990408691853848,
+      "max": 0.8071156555496084
+     },
+     "unseen_tool": {
+      "min": 0.9996010853353938,
+      "avg": 0.9996125855779769,
+      "max": 0.9996226482902374
+     },
+     "unseen_platform": {
+      "min": 0.9941668550757404,
+      "avg": 0.9947004295726881,
+      "max": 0.9950561459039867
+     },
+     "unseen_tool/cobalstrike": {
+      "min": 0.9931564883008538,
+      "avg": 0.9933780877273023,
+      "max": 0.9935475461122336
+     },
+     "unseen_tool/dns2tcp-key": {
+      "min": 0.9997684850238749,
+      "avg": 0.999820575893503,
+      "max": 1.0
+     },
+     "unseen_tool/dns2tcp-txt": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "unseen_tool/ozymandns": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "unseen_tool/tcp-over-dns-CNAME": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "unseen_tool/tcp-over-dns-TXT": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "unseen_platform/AndIodine-CNAME": {
+      "min": 0.9980354677710523,
+      "avg": 0.9980354677710522,
+      "max": 0.9980354677710523
+     },
+     "unseen_platform/AndIodine-MX": {
+      "min": 0.9948525044545634,
+      "avg": 0.9950504850524649,
+      "max": 0.9952484656503663
+     },
+     "unseen_platform/AndIodine-NULL": {
+      "min": 0.9886055344546935,
+      "avg": 0.9886055344546933,
+      "max": 0.9886055344546935
+     },
+     "unseen_platform/AndIodine-SRV": {
+      "min": 0.9918748730448913,
+      "avg": 0.9943394948879408,
+      "max": 0.9957343083485679
+     },
+     "unseen_platform/AndIodine-TXT": {
+      "min": 0.9929529216012528,
+      "avg": 0.9929529216012527,
+      "max": 0.9929529216012528
+     }
+    }
+   },
+   {
+    "variant": "set to 2",
+    "value": 2,
+    "summary": {
+     "test_accuracy": {
+      "min": 0.8587060370240321,
+      "avg": 0.8677668808845265,
+      "max": 0.8840120528168152
+     },
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": 0.0006285714285714285,
+      "avg": 0.0007733333333333332,
+      "max": 0.0008857142857142857
+     },
+     "test_tunnel": {
+      "min": 0.014088540175247695,
+      "avg": 0.0772464349120898,
+      "max": 0.19162705457877555
+     },
+     "fpr_normal": {
+      "min": 0.0005770718847954673,
+      "avg": 0.0007869162065392737,
+      "max": 0.0009311841777381406
+     },
+     "fpr_wildcard": {
+      "min": 0.07187675669887839,
+      "avg": 0.20680140268222824,
+      "max": 0.3813047086222127
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.021323588219732625,
+      "avg": 0.14163513654848256,
+      "max": 0.2889081658391933
+     },
+     "unseen_tool": {
+      "min": 0.0006073565614274676,
+      "avg": 0.03963271100249771,
+      "max": 0.19008104077195379
+     },
+     "unseen_platform": {
+      "min": 0.01237470796593564,
+      "avg": 0.025587459492049137,
+      "max": 0.043092923355188786
+     },
+     "unseen_tool/cobalstrike": {
+      "min": 0.0006517630189663039,
+      "avg": 0.007495274718112494,
+      "max": 0.03421755849573095
+     },
+     "unseen_tool/dns2tcp-key": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_tool/dns2tcp-txt": {
+      "min": 0.012341845843359466,
+      "avg": 0.012341845843359466,
+      "max": 0.012341845843359466
+     },
+     "unseen_tool/ozymandns": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_tool/tcp-over-dns-CNAME": {
+      "min": 0.0,
+      "avg": 0.08027854362330859,
+      "max": 0.3897145077294361
+     },
+     "unseen_tool/tcp-over-dns-TXT": {
+      "min": 0.0,
+      "avg": 0.0001315573096530176,
+      "max": 0.000657786548265088
+     },
+     "unseen_platform/AndIodine-CNAME": {
+      "min": 0.0,
+      "avg": 0.004587448231920994,
+      "max": 0.01454815758734204
+     },
+     "unseen_platform/AndIodine-MX": {
+      "min": 0.0009239094568732264,
+      "avg": 0.005200290371543589,
+      "max": 0.0071273015244506036
+     },
+     "unseen_platform/AndIodine-NULL": {
+      "min": 0.006646771568095496,
+      "avg": 0.009413998914812805,
+      "max": 0.01817688551275095
+     },
+     "unseen_platform/AndIodine-SRV": {
+      "min": 0.0002708375651702891,
+      "avg": 0.005633421355542014,
+      "max": 0.017062766605728214
+     },
+     "unseen_platform/AndIodine-TXT": {
+      "min": 0.07379857100910248,
+      "avg": 0.1350494274248801,
+      "max": 0.20465890183028287
+     }
+    }
+   }
+  ]
+ }
+}

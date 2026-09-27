@@ -15,6 +15,9 @@ Each trained configuration is saved to models/zeek_bilstm/<name>/:
                                     window length, row caps and sampling
                                     seed, training date, git commit and
                                     library versions
+  NOT_FOR_EVALUATION.txt            only for a model trained on every
+                                    capture (features.json then has
+                                    "not_for_evaluation": true)
 load_artifacts reads the folder back; prepare_model_input applies the saved
 scaler and column order to a feature frame.
 """
@@ -31,6 +34,7 @@ import pandas as pd
 import zeek_feature_extraction as zfe
 
 MODELS_DIR = zfe.PROJECT_ROOT / "models" / "zeek_bilstm"
+NOT_FOR_EVALUATION_FILE = "NOT_FOR_EVALUATION.txt"
 
 #: Levels of the categorical features. One-hot encoding drops the first
 #: level of each ("tcp", "A"), as the original notebook's drop_first did.
@@ -98,7 +102,9 @@ def save_artifacts(directory, models, scaler, label_encoder, feature_columns, in
     """Save models, scaler, label encoder and features.json to `directory`.
 
     `info` is merged into features.json (config, feature set, row caps,
-    sampling seed, training rows, hyperparameters, ...).
+    sampling seed, training rows, hyperparameters, ...). With
+    info["not_for_evaluation"] true, NOT_FOR_EVALUATION.txt holds
+    info["note"] as well.
     """
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
@@ -129,6 +135,11 @@ def save_artifacts(directory, models, scaler, label_encoder, feature_columns, in
         **info,
     }
     (directory / "features.json").write_text(json.dumps(features, indent=2), encoding="utf-8")
+    marker = directory / NOT_FOR_EVALUATION_FILE
+    if info.get("not_for_evaluation"):
+        marker.write_text((info.get("note") or "Not for evaluation.") + "\n", encoding="utf-8")
+    elif marker.exists():
+        marker.unlink()
     return directory
 
 

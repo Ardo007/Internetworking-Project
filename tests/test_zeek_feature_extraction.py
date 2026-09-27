@@ -164,6 +164,16 @@ def test_feature_sets():
         assert set(features) <= set(zfe.ALL_FEATURE_COLUMNS)
 
 
+def test_default_ablation_sets_are_subsets_of_the_default():
+    sets = zfe.FEATURE_SETS
+    volume_shape = sets["domain_volume_shape_minus_artefact_suspect"]
+    assert volume_shape == [c for c in sets["domain_volume_shape"] if c != "domain_qtype_diversity"]
+    assert len(volume_shape) == 10
+    for name in ("lexical_only", "domain_volume_shape_minus_artefact_suspect"):
+        assert set(sets[name]) <= set(zfe.FEATURE_COLUMNS), name
+    assert "domain_qtype_diversity" in sets["domain_volume_shape"]  # run 1's set keeps its meaning
+
+
 # ------------------------------------------------------ escape decoding --
 
 def test_escaped_tunnel_query_is_decoded(capture):

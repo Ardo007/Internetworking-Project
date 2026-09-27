@@ -1,5 +1,177 @@
 # Zeek BiLSTM run
 
+<!-- section:defaults:start -->
+## Results at the default settings
+
+The model's results with the defaults chosen in runs 1–3: the 28-feature set `all_minus_artefact_suspect`, an epoch cap of 50 and, for the primary model, config B. Each result is taken from the run that trained it (see the table below), and each is checked against these settings before it is shown here. The run sections further down record how the defaults were chosen: run 1 (all 30 features, directly below this section), run 2 (150 epochs) and run 3 (the feature set on unseen tunnel families, and why 28 features rather than 30).
+
+Config B and the `lexical_only` ablation are run 1's `B-all_minus_artefact_suspect` and `B-lexical_only`, reused rather than retrained. They have the same features, training and validation rows (their saved scalers match scalers fitted on today's training rows exactly), hyperparameters and epoch cap. Run 1 set the random seed once per notebook run rather than before each configuration, so their starting weights differ from what a fresh run would draw. That is the same kind of difference as between the five models of one configuration. The leave-one-family-out folds are run 3's. Config A, the `domain_volume_shape_minus_artefact_suspect` ablation (run 1's `domain_volume_shape` included `domain_qtype_diversity`) and the final model were trained in run 4.
+
+### Default settings
+
+| setting | value |
+|---|---|
+| feature set | `all_minus_artefact_suspect`: 28 features (every feature except `domain_qtype_diversity` and `no_response_ratio`), 41 model inputs after one-hot encoding |
+| epoch cap | 50, with early stopping on the validation loss (patience 5, best weights restored); the learning rate is halved after 2 epochs without improvement, down to 1e-05 |
+| hyperparameters | `{'n_of_hidden_layers': 1, 'n_neurons': 24, 'activation': 'tanh', 'dropout_rate': 0.5, 'l2_reg': 0.0001, 'batch_size': 128}` |
+| class weights | sklearn `balanced`, computed on the training rows |
+| decision rule | argmax of the softmax output (benign / tunnel) |
+| models per configuration | 5, each trained from scratch; tables give the average over them with min – max in brackets |
+| window | 60 s per domain aggregate |
+| train/val row caps per (capture, window) | `{'default': 200, 'wildcard': 1000}` |
+| sampling seed · model seed | 0 · 0 |
+| splits.csv sha256 | `0ad16bd5e36bf0a4108bbd541f4005897b8111927c73422af9cbea4f9bfe1282` |
+
+Features: proto, qname_len, label_count, max_label_len, avg_label_len, first_label_len, digit_ratio, hex_ratio, unique_char_ratio, entropy, first_label_entropy, qtype_name, response_ancount, response_min_ttl, response_rcode, domain_query_count, domain_unique_qnames, domain_query_rate, domain_duration, domain_unique_subdomain_ratio, domain_avg_qname_len, domain_std_qname_len, domain_avg_entropy, domain_txt_ratio, domain_null_ratio, nxdomain_ratio, rejected_ratio, rcode_entropy.
+
+### Where each result comes from
+
+| configuration | result file (results/runs/…) | trained | commit | epochs trained | note |
+|---|---|---|---|---|---|
+| `B` | `run1_all_50ep/B-all_minus_artefact_suspect` | 2026-09-17 | `baf6543` | 50, 50, 50, 50, 50 | run 1, reused |
+| `A` | `run4_default_50ep/A` | 2026-09-25 | `ea1931c` | 50, 50, 50, 50, 50 |  |
+| `B-lexical_only` | `run1_all_50ep/B-lexical_only` | 2026-09-17 | `baf6543` | 46, 27, 20, 27, 39 | run 1, reused |
+| `B-domain_volume_shape_minus_artefact_suspect` | `run4_default_50ep/B-domain_volume_shape_minus_artefact_suspect` | 2026-09-25 | `ea1931c` | 15, 14, 7, 11, 10 |  |
+| `lofo-DNS-shell` | `run3_default_50ep/lofo-DNS-shell` | 2026-09-21 | `f863c2a` | 50, 50, 50, 50, 50 |  |
+| `lofo-dnscat2` | `run3_default_50ep/lofo-dnscat2` | 2026-09-21 | `f863c2a` | 50, 40, 50, 50, 50 |  |
+| `lofo-dnspot` | `run3_default_50ep/lofo-dnspot` | 2026-09-21 | `f863c2a` | 50, 50, 50, 50, 50 |  |
+| `lofo-iodine` | `run3_default_50ep/lofo-iodine` | 2026-09-21 | `f863c2a` | 50, 50, 50, 50, 50 |  |
+| `lofo-tuns` | `run3_default_50ep/lofo-tuns` | 2026-09-21 | `f863c2a` | 50, 50, 50, 50, 50 |  |
+
+### Configs B and A
+
+Config B (primary) has wildcard hard negatives in training and validation; config A (stress test) has none, and holds out all 13 wildcard captures instead of 00007–00012. The 00007–00012 row compares the two on the same captures. Rates are the share of rows classified as tunnel: false positive rates for benign rows, recall for tunnel rows.
+
+| metric | config B | config A |
+|---|---|---|
+| In-distribution test accuracy | 99.99% (99.99% – 99.99%) | 99.99% (99.99% – 99.99%) |
+| In-distribution test FPR (normal 00055–00061) | 0.00% (0.00% – 0.00%) | 0.00% (0.00% – 0.00%) |
+| In-distribution test recall (tunnel test segments) | 99.95% (99.95% – 99.95%) | 99.95% (99.95% – 99.95%) |
+| FPR held-out normal | 0.00% (0.00% – 0.00%) | 0.00% (0.00% – 0.00%) |
+| FPR held-out wildcard 00007–00012 | 0.00% (0.00% – 0.00%) | 51.63% (31.87% – 76.95%) |
+| FPR held-out wildcard (all held-out captures) | 0.00% (0.00% – 0.00%) | 55.65% (39.37% – 82.71%) |
+| Recall unseen tools (unknownTunnel) | 99.18% (99.11% – 99.22%) | 99.96% (99.96% – 99.97%) |
+| Recall unseen platform (crossEndPoint, iodine on Android) | 99.60% (99.49% – 99.62%) | 99.49% (99.40% – 99.57%) |
+| Collapsed runs (one class on the whole test set) | 0/5 | 0/5 |
+| Training rows (benign / tunnel) | 132,514 / 106,680 | 110,904 / 106,680 |
+
+**Recall per unseen tool**
+
+| capture | config B | config A |
+|---|---|---|
+| cobalstrike | 88.13% (88.07% – 88.19%) | 99.41% (99.40% – 99.42%) |
+| dns2tcp-key | 99.67% (99.10% – 99.98%) | 99.98% (99.98% – 99.98%) |
+| dns2tcp-txt | 97.36% (97.36% – 97.36%) | 99.96% (99.90% – 100.00%) |
+| ozymandns | 100.00% (100.00% – 100.00%) | 100.00% (100.00% – 100.00%) |
+| tcp-over-dns-CNAME | 100.00% (100.00% – 100.00%) | 100.00% (100.00% – 100.00%) |
+| tcp-over-dns-TXT | 100.00% (100.00% – 100.00%) | 100.00% (100.00% – 100.00%) |
+
+**Recall per unseen-platform capture (iodine on Android)**
+
+| capture | config B | config A |
+|---|---|---|
+| AndIodine-CNAME | 99.80% (99.80% – 99.80%) | 99.80% (99.80% – 99.80%) |
+| AndIodine-MX | 99.84% (99.84% – 99.84%) | 99.76% (99.69% – 99.84%) |
+| AndIodine-NULL | 98.86% (98.86% – 98.86%) | 98.86% (98.86% – 98.86%) |
+| AndIodine-SRV | 99.66% (99.17% – 99.78%) | 99.25% (98.84% – 99.57%) |
+| AndIodine-TXT | 99.30% (99.30% – 99.30%) | 99.30% (99.30% – 99.30%) |
+
+**By window size**: rate by the number of queries in the row's 60 s window (all domains), rows in brackets.
+
+*Config B*
+
+| group | <10 | 10-99 | >=100 |
+|---|---|---|---|
+| In-distribution test FPR (normal 00055–00061) | 0.00% (1) | 0.00% (88) | 0.00% (104,911) |
+| In-distribution test recall (tunnel test segments) | 63.64% (22) | 100.00% (1,275) | 100.00% (16,164) |
+| FPR held-out normal | 0.00% (2) | 0.00% (129) | 0.00% (76,116) |
+| FPR held-out wildcard (all held-out captures) | – | 0.00% (143) | 0.00% (162,400) |
+| FPR held-out wildcard 00007–00012 | – | 0.00% (143) | 0.00% (162,400) |
+| Recall unseen tools (unknownTunnel) | 20.28% (141) | 91.42% (4,130) | 99.34% (273,984) |
+| Recall unseen platform (crossEndPoint, iodine on Android) | 50.00% (16) | 97.24% (5,781) | 99.83% (60,548) |
+
+*Config A*
+
+| group | <10 | 10-99 | >=100 |
+|---|---|---|---|
+| In-distribution test FPR (normal 00055–00061) | 0.00% (1) | 0.00% (88) | 0.00% (104,911) |
+| In-distribution test recall (tunnel test segments) | 63.64% (22) | 100.00% (1,275) | 100.00% (16,164) |
+| FPR held-out normal | 0.00% (2) | 0.00% (129) | 0.00% (76,116) |
+| FPR held-out wildcard (all held-out captures) | – | 6.29% (143) | 55.67% (373,427) |
+| FPR held-out wildcard 00007–00012 | – | 6.29% (143) | 51.67% (162,400) |
+| Recall unseen tools (unknownTunnel) | 30.21% (141) | 100.00% (4,130) | 100.00% (273,984) |
+| Recall unseen platform (crossEndPoint, iodine on Android) | 50.00% (16) | 95.97% (5,781) | 99.83% (60,548) |
+
+### Feature-set ablations (config B)
+
+Same rows, splits and training; only the model inputs change. Every set is a subset of the default.
+
+| feature set | features (inputs) | In-distribution test accuracy | FPR held-out normal | FPR held-out wildcard (all held-out captures) | Recall unseen tools (unknownTunnel) | Recall unseen platform (crossEndPoint, iodine on Android) |
+|---|---|---|---|---|---|---|
+| `all` (the default) | 28 (41) | 99.99% (99.99% – 99.99%) | 0.00% (0.00% – 0.00%) | 0.00% (0.00% – 0.00%) | 99.18% (99.11% – 99.22%) | 99.60% (99.49% – 99.62%) |
+| `lexical_only` | 11 (24) | 99.91% (99.90% – 99.93%) | 0.01% (0.01% – 0.02%) | 0.51% (0.46% – 0.56%) | 99.81% (99.80% – 99.82%) | 99.63% (99.60% – 99.64%) |
+| `domain_volume_shape_minus_artefact_suspect` | 10 (10) | 99.95% (99.93% – 99.96%) | 0.02% (0.02% – 0.03%) | 0.00% (0.00% – 0.00%) | 96.49% (94.37% – 98.95%) | 99.62% (99.61% – 99.62%) |
+
+- `lexical_only`: qname_len, label_count, max_label_len, avg_label_len, first_label_len, digit_ratio, hex_ratio, unique_char_ratio, entropy, first_label_entropy, qtype_name
+- `domain_volume_shape_minus_artefact_suspect`: domain_query_count, domain_unique_qnames, domain_query_rate, domain_duration, domain_unique_subdomain_ratio, domain_avg_qname_len, domain_std_qname_len, domain_avg_entropy, domain_txt_ratio, domain_null_ratio
+
+### Leave-one-tunnel-family-out cross-validation
+
+Config B's benign data; each fold trains on four tunnel families and is scored on every row of the fifth family's captures and on the held-out normal and wildcard captures.
+
+| held-out family | rows | recall | FPR held-out normal | FPR held-out wildcard | collapsed |
+|---|---|---|---|---|---|
+| DNS-shell | 21,855 | 0.03% (0.03% – 0.03%) | 0.00% (0.00% – 0.00%) | 0.02% (0.00% – 0.10%) | 0/5 |
+| dnscat2 | 64,438 | 99.09% (98.36% – 99.78%) | 0.00% (0.00% – 0.00%) | 0.00% (0.00% – 0.00%) | 0/5 |
+| dnspot | 26,687 | 0.55% (0.40% – 0.67%) | 0.00% (0.00% – 0.00%) | 0.00% (0.00% – 0.00%) | 0/5 |
+| iodine | 58,970 | 42.07% (39.18% – 45.92%) | 0.00% (0.00% – 0.00%) | 0.28% (0.25% – 0.30%) | 0/5 |
+| tuns | 18,525 | 98.05% (97.39% – 99.49%) | 0.00% (0.00% – 0.01%) | 0.00% (0.00% – 0.00%) | 0/5 |
+| **all five (row-weighted)** | 190,475 | **56.16%** |  |  |  |
+
+| family | capture | recall |
+|---|---|---|
+| DNS-shell | DNS-shell | 0.03% (0.03% – 0.03%) |
+| dnscat2 | dnscat2-cname | 100.00% (100.00% – 100.00%) |
+| dnscat2 | dnscat2-mx | 97.70% (95.89% – 99.45%) |
+| dnscat2 | dnscat2-txt | 100.00% (100.00% – 100.00%) |
+| dnspot | dnspot | 0.55% (0.40% – 0.67%) |
+| iodine | iodine-NULL | 19.42% (14.30% – 27.12%) |
+| iodine | iodine-a | 0.00% (0.00% – 0.00%) |
+| iodine | iodine-cname | 99.98% (99.98% – 99.98%) |
+| iodine | iodine-mx | 77.49% (64.70% – 92.76%) |
+| iodine | iodine-private | 7.03% (3.80% – 11.48%) |
+| iodine | iodine-srv | 0.06% (0.00% – 0.15%) |
+| iodine | iodine-txt | 99.55% (99.47% – 99.70%) |
+| tuns | tuns | 98.05% (97.39% – 99.49%) |
+
+### Final model (not for evaluation)
+
+Trained on every GraphTunnel capture, including the unseen tools (unknownTunnel) and the unseen platform (crossEndPoint), so no GraphTunnel data is left that it hasn't been trained on, and it has no results here. It is the model for scoring new traffic; config B above is its evaluated counterpart.
+
+- Saved to `models/zeek_bilstm/run4_default_50ep/final/`: `model_1.keras` … `model_5.keras`, `scaler.joblib`, `label_encoder.joblib`, `features.json` (`"not_for_evaluation": true`) and `NOT_FOR_EVALUATION.txt`. The scoring functions in `zeek_experiments` refuse to score it.
+- Trained 2026-09-25 at commit `ea1931c` with the settings above; epochs trained: 39, 25, 29, 44, 27.
+- Training rows: every capture, capped per window like the other configurations (benign / tunnel 202,628 / 336,852). Early stopping and the learning-rate schedule monitor config B's validation rows (18,232 / 22,621), which are training rows here too.
+
+| category | captures | training rows |
+|---|---|---|
+| tunnel | 13 | 149,122 |
+| normal | 68 | 145,570 |
+| unknownTunnel | 6 | 138,454 |
+| wildcard | 13 | 57,058 |
+| crossEndPoint | 5 | 49,276 |
+| **total** | **105** | **539,480** |
+
+### Findings
+
+1. **On known traffic and unseen tools the default model is close to perfect; unseen tunnel families are its weak spot.** Config B reaches 99.99% in-distribution test accuracy with 0.00% false positives on held-out normal and wildcard, and finds 99.18% of unseen-tool rows and 99.60% of unseen-platform rows. The gaps are cobalstrike (88.13%) and tunnel families it has never seen: over the five leave-one-family-out folds it finds 56.16% of the held-out family's rows, from 98–99% for dnscat2 and tuns down to 42.07% for iodine and under 1% for DNS-shell and dnspot.
+2. **Without wildcard hard negatives (config A) the default model calls about half of the wildcard traffic tunnelling.** It flags 55.65% of all 13 held-out wildcard captures (39.37–82.71% across its five models) and 51.63% of 00007–00012, where config B flags 0.00%. Run 1's 30-feature config A flagged 20.68%, but only because of `domain_qtype_diversity`: with it set to 1 on every row, run 1's A models flag 72.81% (`results/runs/run4_default_50ep/diagnostics/config_a_query_type_count.json`). At 28 features, config A therefore shows the real dependence. The model recognises wildcard-style benign traffic only if it has seen some in training, which is what config B provides. In exchange, config A finds more of the unseen tools (99.96% against config B's 99.18%, cobalstrike 99.41% against 88.13%), so learning to pass wildcard traffic costs config B some unseen-tool recall, most of it on cobalstrike.
+3. **Neither feature group alone matches the default.** `lexical_only` (11 features) finds more unseen-tool rows (99.81%) but flags 0.51% of held-out wildcard; the default flags none. The 10 per-domain volume and shape features keep false positives at 0.00% (wildcard) and 0.02% (normal) but find only 96.49% of unseen-tool rows (94.37–98.95%), mostly because of dns2tcp-key (73.38%). They also fit worst: early stopping ended training after 7–15 epochs, with the best validation loss at 3.8e-03 to 8.1e-03, about ten times config B's (3.2e-04 to 5.7e-04 at epoch 50 in run 2). Without `domain_qtype_diversity`, the domain features find all of ozymandns, against 40.03% for run 1's 11-feature version.
+4. **Sparse windows remain a blind spot.** In config B, unseen-tool recall is 20.28% for rows whose 60 s window holds fewer than 10 queries, 91.42% for 10–99 queries and 99.34% for 100 or more. The sparse buckets are small (141 unseen-tool rows, 16 unseen-platform rows, 22 in-distribution tunnel rows), but live traffic from a slow or careful tunnel would fall into them.
+5. **The final model trained normally and is not evaluated.** Its five models trained on 539,480 rows from all 105 captures. Unlike the runbook's expectation of 50 epochs, early stopping ended each one after 25–44 epochs, keeping the weights of epochs 20–39. By then the learning rate had been cut to its 1e-05 floor (from epochs 25–30), and the validation loss on rows the model also trains on had stopped improving: the training had converged on those rows. Those rows can't show overfitting. Config B is its evaluated counterpart. The final model has also seen the test segments, the held-out captures and the unseen tools and platform, so config B's numbers describe it only approximately, and none of them measure how it does on new traffic.
+<!-- section:defaults:end -->
+
+## Run 1: all 30 features, epoch cap 50
+
 Generated by `notebooks/dns_tunneling_bilstm_model.ipynb` on 2026-09-17T23:38:07+00:00 (started 2026-09-17T17:27:34+00:00).
 
 - Git commit: `baf6543e643c88164dc2bf4f33fc5741da529ca0`
@@ -337,3 +509,202 @@ Config B benign data; each fold trains on four tunnel families and is scored on 
 | iodine | iodine-txt | 99.83% (99.76% – 99.91%) | 99.54% (99.47% – 99.66%) |
 | tuns | tuns | 99.97% (99.97% – 99.97%) | 98.18% (97.18% – 99.49%) |
 <!-- section:run2_default_150ep:end -->
+
+<!-- section:run3_default_50ep:start -->
+## Run 3: leave-one-family-out with 28 features at 50 epochs
+
+Run 3 retrains the five leave-one-tunnel-family-out folds with the default 28 features at run 1's epoch cap of 50, one fold per command with `notebooks/run_experiments.py` (see `results/run3_runbook.md`). Splits, row caps, seeds, early stopping and `Build_model` are as in runs 1 and 2, so the three runs form a 2×2 comparison of feature set and training length on unseen-family recall: run 3 − run 1 is the effect of dropping `domain_qtype_diversity` and `no_response_ratio`, and run 2 − run 3 the effect of 100 more epochs.
+
+Run 1's folds were trained after other configurations in one kernel without reseeding, and their input layer has 43 columns instead of 41, so their starting weights differ from run 3's anyway; the spread over each fold's 5 models shows how much that alone moves the results.
+
+- Run `run3_default_50ep`: `lofo-DNS-shell`, `lofo-dnscat2`, `lofo-dnspot`, `lofo-iodine`, `lofo-tuns`; trained 2026-09-21T16:06:56+00:00 – 2026-09-21T16:17:22+00:00.
+- Git commit: `f863c2a16de8fcf079e759c536cc779945b17e46`
+- Versions: python 3.13.15, tensorflow 2.21.0, keras 3.15.1, numpy 2.5.3, pandas 3.0.5, scikit-learn 1.9.1
+- Models: `models/zeek_bilstm/run3_default_50ep/<fold>/`; results: `results/runs/run3_default_50ep/<fold>.json`.
+
+### Settings
+
+| setting | run 1 | run 2 | run 3 |
+|---|---|---|---|
+| epoch_cap | `50` | `150` | `50` |
+| row_caps | `{'default': 200, 'wildcard': 1000}` | `{'default': 200, 'wildcard': 1000}` | `{'default': 200, 'wildcard': 1000}` |
+| sampling_seed | `0` | `0` | `0` |
+| window_seconds | `60` | `60` | `60` |
+| splits_sha256 | `0ad16bd5e36bf0a4108bbd541f4005897b8111927c73422af9cbea4f9bfe1282` | `0ad16bd5e36bf0a4108bbd541f4005897b8111927c73422af9cbea4f9bfe1282` | `0ad16bd5e36bf0a4108bbd541f4005897b8111927c73422af9cbea4f9bfe1282` |
+| feature set | `all` | `all_minus_artefact_suspect` | `all_minus_artefact_suspect` |
+
+### Unseen-family recall
+
+Share of all 190,475 held-out-family rows detected, over the five folds (each fold's average over its 5 models, weighted by the family's rows):
+
+|  | 50 epochs | 150 epochs |
+|---|---|---|
+| 30 features | run 1: **62.88%** | not run |
+| 28 features | run 3: **56.16%** | run 2: **55.32%** |
+
+Per family: average recall over the 5 models (min – max). The last columns are differences in the average, in percentage points.
+
+| held-out family | rows | run 1 (30 features, 50 epochs) | run 2 (28 features, 150 epochs) | run 3 (28 features, 50 epochs) | feature change (run 3 − run 1) | 100 more epochs (run 2 − run 3) |
+|---|---|---|---|---|---|---|
+| DNS-shell | 21,855 | 6.47% (0.11% – 20.49%) | 0.03% (0.03% – 0.03%) | 0.03% (0.03% – 0.03%) | -6.44 pp | +0.00 pp |
+| dnscat2 | 64,438 | 99.95% (99.92% – 99.99%) | 98.38% (96.11% – 99.62%) | 99.09% (98.36% – 99.78%) | -0.87 pp | -0.70 pp |
+| dnspot | 26,687 | 4.10% (1.32% – 14.94%) | 0.04% (0.00% – 0.16%) | 0.55% (0.40% – 0.67%) | -3.55 pp | -0.51 pp |
+| iodine | 58,970 | 58.23% (56.83% – 59.60%) | 40.31% (37.14% – 45.10%) | 42.07% (39.18% – 45.92%) | -16.17 pp | -1.76 pp |
+| tuns | 18,525 | 99.97% (99.97% – 99.97%) | 98.18% (97.18% – 99.49%) | 98.05% (97.39% – 99.49%) | -1.93 pp | +0.13 pp |
+| **all five (row-weighted)** | 190,475 | 62.88% | 55.32% | 56.16% | -6.72 pp | -0.84 pp |
+
+False positive rates on the held-out benign captures stay near zero in every run:
+
+| held-out family | FPR normal · run 1 | FPR normal · run 2 | FPR normal · run 3 | FPR wildcard · run 1 | FPR wildcard · run 2 | FPR wildcard · run 3 |
+|---|---|---|---|---|---|---|
+| DNS-shell | 0.00% | 0.00% | 0.00% | 0.01% | 0.05% | 0.02% |
+| dnscat2 | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
+| dnspot | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
+| iodine | 0.00% | 0.00% | 0.00% | 0.30% | 0.29% | 0.28% |
+| tuns | 0.01% | 0.00% | 0.00% | 0.01% | 0.00% | 0.00% |
+
+### Per capture
+
+Recall on each capture of the held-out family (iodine-NULL, iodine-private, iodine-a, iodine-srv first):
+
+| capture | family | run 1 (30 features, 50 epochs) | run 2 (28 features, 150 epochs) | run 3 (28 features, 50 epochs) | feature change (run 3 − run 1) | 100 more epochs (run 2 − run 3) |
+|---|---|---|---|---|---|---|
+| **iodine-NULL** | iodine | 82.87% (81.68% – 84.77%) | 15.53% (5.21% – 25.83%) | 19.42% (14.30% – 27.12%) | -63.46 pp | -3.89 pp |
+| **iodine-private** | iodine | 88.30% (86.88% – 90.57%) | 7.86% (1.19% – 15.13%) | 7.03% (3.80% – 11.48%) | -81.27 pp | +0.83 pp |
+| **iodine-a** | iodine | 0.23% (0.19% – 0.33%) | 0.00% (0.00% – 0.00%) | 0.00% (0.00% – 0.00%) | -0.23 pp | +0.00 pp |
+| **iodine-srv** | iodine | 1.07% (0.68% – 1.69%) | 0.08% (0.00% – 0.18%) | 0.06% (0.00% – 0.15%) | -1.01 pp | +0.02 pp |
+| DNS-shell | DNS-shell | 6.47% (0.11% – 20.49%) | 0.03% (0.03% – 0.03%) | 0.03% (0.03% – 0.03%) | -6.44 pp | +0.00 pp |
+| dnscat2-cname | dnscat2 | 100.00% (100.00% – 100.00%) | 100.00% (100.00% – 100.00%) | 100.00% (100.00% – 100.00%) | +0.00 pp | +0.00 pp |
+| dnscat2-mx | dnscat2 | 99.89% (99.79% – 99.98%) | 95.94% (90.24% – 99.05%) | 97.70% (95.89% – 99.45%) | -2.18 pp | -1.76 pp |
+| dnscat2-txt | dnscat2 | 100.00% (100.00% – 100.00%) | 100.00% (100.00% – 100.00%) | 100.00% (100.00% – 100.00%) | +0.00 pp | +0.00 pp |
+| dnspot | dnspot | 4.10% (1.32% – 14.94%) | 0.04% (0.00% – 0.16%) | 0.55% (0.40% – 0.67%) | -3.55 pp | -0.51 pp |
+| iodine-cname | iodine | 99.98% (99.98% – 99.98%) | 99.98% (99.98% – 99.98%) | 99.98% (99.98% – 99.98%) | +0.00 pp | +0.00 pp |
+| iodine-mx | iodine | 78.85% (72.23% – 84.22%) | 68.80% (60.59% – 87.44%) | 77.49% (64.70% – 92.76%) | -1.36 pp | -8.69 pp |
+| iodine-txt | iodine | 99.83% (99.76% – 99.91%) | 99.54% (99.47% – 99.66%) | 99.55% (99.47% – 99.70%) | -0.28 pp | -0.01 pp |
+| tuns | tuns | 99.97% (99.97% – 99.97%) | 98.18% (97.18% – 99.49%) | 98.05% (97.39% – 99.49%) | -1.93 pp | +0.13 pp |
+
+### Which of the two features?
+
+Inference only, no retraining: run 1's saved models (all 30 features) scored with a feature replaced by its training average (0 after scaling), so it no longer carries information. A large change means the trained model relied on that feature. Retraining without the feature (runs 2 and 3) lets the model compensate, so this measures reliance, not what a retrained model would reach.
+
+Run 1 fold models (`models/zeek_bilstm/<name>/`), average over their 5 models:
+
+| fold / capture | as trained | without domain_qtype_diversity | without no_response_ratio | without both |
+|---|---|---|---|---|
+| DNS-shell recall | 6.47% | 1.22% | 8.09% | 1.37% |
+| &nbsp;&nbsp;FPR wildcard | 0.01% | 3.77% | 0.01% | 2.74% |
+| dnscat2 recall | 99.95% | 99.94% | 99.95% | 99.93% |
+| &nbsp;&nbsp;FPR wildcard | 0.00% | 5.06% | 0.00% | 5.01% |
+| dnspot recall | 4.10% | 0.87% | 5.43% | 0.89% |
+| &nbsp;&nbsp;FPR wildcard | 0.00% | 11.44% | 0.00% | 10.94% |
+| iodine recall | 58.23% | 43.95% | 59.18% | 45.37% |
+| &nbsp;&nbsp;iodine-NULL | 82.87% | 35.70% | 82.89% | 40.75% |
+| &nbsp;&nbsp;iodine-private | 88.30% | 44.90% | 87.03% | 38.40% |
+| &nbsp;&nbsp;iodine-a | 0.23% | 0.11% | 0.25% | 0.10% |
+| &nbsp;&nbsp;iodine-srv | 1.07% | 0.12% | 1.46% | 0.19% |
+| &nbsp;&nbsp;FPR wildcard | 0.30% | 1.76% | 0.31% | 2.47% |
+| tuns recall | 99.97% | 99.95% | 99.97% | 99.96% |
+| &nbsp;&nbsp;FPR wildcard | 0.01% | 25.38% | 0.00% | 24.88% |
+
+Run 1 config `B` models, average over their 5 models:
+
+| metric | as trained | without domain_qtype_diversity | without no_response_ratio | without both |
+|---|---|---|---|---|
+| Recall unseen tools (unknownTunnel) | 97.09% | 99.96% | 97.08% | 99.95% |
+| &nbsp;&nbsp;ozymandns | 19.91% | 100.00% | 19.90% | 100.00% |
+| &nbsp;&nbsp;cobalstrike | 92.45% | 99.32% | 92.36% | 99.28% |
+| Recall unseen platform (crossEndPoint, iodine on Android) | 99.39% | 99.37% | 99.40% | 99.38% |
+| FPR held-out normal | 0.01% | 0.00% | 0.00% | 0.00% |
+| FPR held-out wildcard (all held-out captures) | 0.00% | 18.77% | 0.00% | 17.91% |
+
+Share of rows whose domain has more than one query type in its 60 s window (`domain_qtype_diversity` > 1):
+
+| traffic | rows | > 1 query type |
+|---|---|---|
+| normal (train) | 720,000 | 0.02% |
+| wildcard (train, config B) | 184,780 | 100.00% |
+| DNS-shell | 21,855 | 0.00% |
+| dnscat2-cname | 19,775 | 0.00% |
+| dnscat2-mx | 25,687 | 0.00% |
+| dnscat2-txt | 18,976 | 0.00% |
+| dnspot | 26,687 | 0.00% |
+| iodine-NULL | 6,512 | 0.00% |
+| iodine-a | 11,979 | 0.00% |
+| iodine-cname | 9,089 | 0.02% |
+| iodine-mx | 9,645 | 0.00% |
+| iodine-private | 6,317 | 0.00% |
+| iodine-srv | 8,866 | 0.00% |
+| iodine-txt | 6,562 | 0.00% |
+| tuns | 18,525 | 0.03% |
+| cobalstrike | 15,343 | 7.04% |
+| dns2tcp-key | 34,555 | 0.00% |
+| dns2tcp-txt | 12,883 | 0.00% |
+| ozymandns | 8,663 | 80.38% |
+| tcp-over-dns-CNAME | 133,839 | 0.00% |
+| tcp-over-dns-TXT | 72,972 | 0.00% |
+| AndIodine-CNAME | 18,834 | 0.16% |
+| AndIodine-MX | 15,153 | 0.00% |
+| AndIodine-NULL | 7,372 | 0.00% |
+| AndIodine-SRV | 14,769 | 0.41% |
+| AndIodine-TXT | 10,217 | 0.00% |
+
+### What the query-type count does in the 30-feature models
+
+Inference only, no retraining: run 1's saved models (all 30 features) scored with `domain_qtype_diversity`, the number of query types asked for the row's domain in its 60 s window, set to one value on every scored row; every other input stays as recorded. 1 is what the normal crawl and every tunnel family show, 2 is the wildcard captures' A + AAAA, 3 is a client asking A, AAAA and HTTPS for the same name.
+
+Config `B` models (`models/zeek_bilstm/B/`), average over their 5 models:
+
+| metric | as recorded | set to 1 | set to 2 | set to 3 |
+|---|---|---|---|---|
+| FPR held-out normal | 0.01% | 0.01% | 0.00% | 0.00% |
+| FPR held-out wildcard (all held-out captures) | 0.00% | 25.16% | 0.00% | 0.00% |
+| Recall unseen tools (unknownTunnel) | 97.09% | 99.96% | 0.02% | 0.00% |
+| &nbsp;&nbsp;ozymandns | 19.91% | 100.00% | 0.28% | 0.00% |
+| &nbsp;&nbsp;cobalstrike | 92.45% | 99.38% | 0.11% | 0.00% |
+| Recall unseen platform (crossEndPoint, iodine on Android) | 99.39% | 99.44% | 2.84% | 0.11% |
+
+Fold models (`models/zeek_bilstm/<name>/`), average over their 5 models:
+
+| fold | as recorded | set to 1 | set to 2 | set to 3 |
+|---|---|---|---|---|
+| DNS-shell recall | 6.47% | 6.47% | 0.40% | 0.10% |
+| &nbsp;&nbsp;FPR normal | 0.00% | 0.00% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR wildcard | 0.01% | 7.39% | 0.01% | 0.00% |
+| dnscat2 recall | 99.95% | 99.95% | 85.38% | 0.00% |
+| &nbsp;&nbsp;FPR normal | 0.00% | 0.00% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR wildcard | 0.00% | 12.17% | 0.00% | 0.00% |
+| dnspot recall | 4.10% | 4.10% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR normal | 0.00% | 0.00% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR wildcard | 0.00% | 21.31% | 0.00% | 0.00% |
+| iodine recall | 58.23% | 58.23% | 3.24% | 0.00% |
+| &nbsp;&nbsp;FPR normal | 0.00% | 0.00% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR wildcard | 0.30% | 3.40% | 0.30% | 0.21% |
+| tuns recall | 99.97% | 99.97% | 23.75% | 0.00% |
+| &nbsp;&nbsp;FPR normal | 0.01% | 0.01% | 0.00% | 0.00% |
+| &nbsp;&nbsp;FPR wildcard | 0.01% | 36.39% | 0.01% | 0.00% |
+
+### Training length
+
+| fold | stopped | best | best val loss |
+|---|---|---|---|
+| `lofo-DNS-shell` | 50, 50, 50, 50, 50 | 50, 50, 50, 48, 50 | 3.06e-04, 3.14e-04, 3.38e-04, 2.91e-04, 3.05e-04 |
+| `lofo-dnscat2` | 50, 40, 50, 50, 50 | 49, 35, 49, 50, 49 | 4.85e-04, 5.02e-04, 4.66e-04, 5.06e-04, 4.75e-04 |
+| `lofo-dnspot` | 50, 50, 50, 50, 50 | 50, 50, 50, 50, 50 | 3.38e-04, 3.60e-04, 3.46e-04, 3.29e-04, 3.29e-04 |
+| `lofo-iodine` | 50, 50, 50, 50, 50 | 50, 50, 50, 50, 50 | 2.13e-04, 1.72e-04, 1.92e-04, 1.73e-04, 2.11e-04 |
+| `lofo-tuns` | 50, 50, 50, 50, 50 | 50, 50, 47, 50, 49 | 3.03e-04, 3.07e-04, 3.87e-04, 3.72e-04, 3.31e-04 |
+
+### Findings
+
+1. **The drop comes from the feature change, not the longer training.** Over all five folds, dropping the two features cost 6.72 pp of unseen-family recall (62.88% → 56.16%, run 1 → run 3); 100 more epochs cost a further 0.84 pp (run 3 → run 2). About three quarters of it is iodine (−16.17 pp from the features, −1.76 pp from the epochs), and within iodine the NULL (−63.46 pp) and private (−81.27 pp) captures. iodine-a and iodine-srv are missed in every run (at most 1.07%).
+2. **Run 3 is run 2 stopped at epoch 50.** For all 25 models the validation loss at epoch 50 is the same in both runs, and dnscat2's second model early-stops at epoch 40 in both, so run 2 − run 3 isolates the extra 100 epochs exactly. They lowered the validation loss by a median of about 30% and changed held-out-family recall by −1.76 to +0.13 pp per family. The 50-epoch cap loses nothing.
+3. **DNS-shell and dnspot are missed with either feature set.** Run 1's 6.47% and 4.10% come from single models (DNS-shell 20.49% and 10.10%, the other three at most 1.03%; dnspot 14.94%, the other four 1.3–1.5%). Runs 2 and 3 find 0.03–0.55%.
+4. **Of the two dropped features, only `domain_qtype_diversity` mattered.** Neutralising it in run 1's fold models reproduces most of the loss (iodine-NULL 82.87% → 35.70%, iodine-private 88.30% → 44.90%, DNS-shell 6.47% → 1.22%, dnspot 4.10% → 0.87%). Neutralising `no_response_ratio` moves recall by −1.27 pp (iodine-private) to +6.16 pp (iodine-mx), mostly upwards, and leaves config B unchanged.
+5. **In GraphTunnel, `domain_qtype_diversity` identifies the wildcard captures, not tunnels.** More than one query type per domain window occurs in 99.998% of wildcard training rows (its A+AAAA pairs), in 0.02% of normal rows and in at most 0.03% of the tunnel-family captures. Run 1's models use it to recognise wildcard as benign: with it neutralised they flag 1.8–25.4% of held-out wildcard. That shortcut leaves room to call other unusual traffic a tunnel, which catches more unseen iodine variants, but it also calls benign any tunnel that mixes query types. ozymandns mixes them in 80.4% of its rows, and run 1's config B found 19.91% of it (100% with the feature neutralised, and 100% in run 2); cobalstrike mixes them in 7.0% and run 1 found 92.45% (99.32% neutralised).
+6. **Recommendation: keep the 28-feature default (`all_minus_artefact_suspect`).**
+   - `no_response_ratio` contributes nothing measurable in any fold or in config B, and its GraphTunnel values reflect how the wildcard capture was recorded (about half of its queries unanswered).
+   - `domain_qtype_diversity` buys unseen-family recall through a shortcut tied to how the wildcard traffic was generated, and the same shortcut lets any tunnel that mixes record types pass as benign, an evasion ozymandns already shows. Without it the model keeps 0.00% false positives on held-out normal and wildcard and finds all of ozymandns.
+   - **The 62.88% is optimistic in a way the 56.16% is not.** The shortcut only works because GraphTunnel's benign crawl asks for A records (99.99% of its rows), which leaves the wildcard captures (A + AAAA) as the only traffic with more than one query type per domain window; every tunnel family asks for one. Run 1's 30-feature models follow that count almost completely (see *What the query-type count does in the 30-feature models*). Set to 2 or 3, it turns their verdicts to benign: config B's unseen-tool recall falls from 97.09% to 0.02% and 0.00%, the iodine fold's from 58.23% to 3.24% and 0.00%, and at 3 no fold finds more than 0.10% of its held-out family. Set to 1, it makes them flag 25.16% of held-out wildcard in config B and 3.40–36.39% in the folds. Real clients ask for A, AAAA and HTTPS records for ordinary names all the time, so in live traffic the count no longer singles out one kind of benign traffic. The ordinary lookups themselves are not the problem: with the count at 2 or 3 the models flag 0.00% of held-out normal. The problem is benign names that look unusual but are asked for with one record type in their window, which the models would flag, and tunnels whose domain also gets an AAAA or HTTPS query, which they would miss. GraphTunnel contains neither, so it can't show those false positives and misses. The 28-feature models never see the count.
+   - The cost is lower unseen-family recall (56.16% against 62.88% over the five folds), mostly iodine NULL and private. That is better addressed with training data, such as more tunnel families and record types, or realistic benign traffic whose clients ask for A, AAAA and HTTPS records (the `own_benign` captures), than with this feature.
+   - If unseen-family recall matters more than that evasion, the alternative is to drop only `no_response_ratio` (29 features). The neutralisation results suggest it would recover most of the iodine recall and miss most of ozymandns again, but that set hasn't been trained.
+7. **Model selection can't see generalisation to the held-out family.** In these folds the validation rows come only from the four trained-on families and from benign traffic, so `val_accuracy` is about 1.0000 from the first epoch and the validation loss keeps falling (by about 30% between epochs 50 and 150 in run 2) while held-out-family recall stays flat or drops. Early stopping and the best-epoch weights therefore optimise the fit to known tools only. A selection signal for unseen families would need another family held out of training for validation (nested leave-one-family-out), at roughly four times the training cost.
+<!-- section:run3_default_50ep:end -->

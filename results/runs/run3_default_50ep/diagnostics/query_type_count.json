@@ -1,0 +1,1529 @@
+{
+ "title": "What the query-type count does in the 30-feature models",
+ "description": "Inference only, no retraining: run 1's saved models (all 30 features) scored with `domain_qtype_diversity`, the number of query types asked for the row's domain in its 60 s window, set to one value on every scored row; every other input stays as recorded. 1 is what the normal crawl and every tunnel family show, 2 is the wildcard captures' A + AAAA, 3 is a client asking A, AAAA and HTTPS for the same name.",
+ "models": "models/zeek_bilstm/<name>/",
+ "feature": "domain_qtype_diversity",
+ "values": [
+  1,
+  2,
+  3
+ ],
+ "results": {
+  "B": [
+   {
+    "variant": "as recorded",
+    "value": null,
+    "summary": {
+     "test_accuracy": {
+      "min": 0.9999183413494909,
+      "avg": 0.9999199745225011,
+      "max": 0.9999265072145418
+     },
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": 9.523809523809523e-06,
+      "avg": 1.714285714285714e-05,
+      "max": 1.9047619047619046e-05
+     },
+     "test_tunnel": {
+      "min": 0.9995418360918619,
+      "avg": 0.9995418360918619,
+      "max": 0.9995418360918619
+     },
+     "fpr_normal": {
+      "min": 3.934581032696368e-05,
+      "avg": 7.082245858853464e-05,
+      "max": 9.180689076291526e-05
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 6.152218182265616e-06,
+      "max": 3.076109091132808e-05
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 6.152218182265616e-06,
+      "max": 3.076109091132808e-05
+     },
+     "unseen_tool": {
+      "min": 0.9707175073224201,
+      "avg": 0.9708684480063251,
+      "max": 0.9713068947548112
+     },
+     "unseen_platform": {
+      "min": 0.9934132187806165,
+      "avg": 0.9939317205516618,
+      "max": 0.9948903459190594
+     },
+     "unseen_tool/cobalstrike": {
+      "min": 0.9232874926676661,
+      "avg": 0.9244606661018053,
+      "max": 0.9268721892719807
+     },
+     "unseen_tool/dns2tcp-key": {
+      "min": 0.9997684850238749,
+      "avg": 0.999768485023875,
+      "max": 0.9997684850238749
+     },
+     "unseen_tool/dns2tcp-txt": {
+      "min": 0.9998447566560583,
+      "avg": 0.9999689513312117,
+      "max": 1.0
+     },
+     "unseen_tool/ozymandns": {
+      "min": 0.1962368694447651,
+      "avg": 0.19907653237908346,
+      "max": 0.20881911577975298
+     },
+     "unseen_tool/tcp-over-dns-CNAME": {
+      "min": 0.9999925283362846,
+      "avg": 0.9999985056672569,
+      "max": 1.0
+     },
+     "unseen_tool/tcp-over-dns-TXT": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "unseen_platform/AndIodine-CNAME": {
+      "min": 0.9964426038016353,
+      "avg": 0.9964426038016352,
+      "max": 0.9964426038016353
+     },
+     "unseen_platform/AndIodine-MX": {
+      "min": 0.9965023427704085,
+      "avg": 0.9968323104335776,
+      "max": 0.9975582392925493
+     },
+     "unseen_platform/AndIodine-NULL": {
+      "min": 0.9886055344546935,
+      "avg": 0.9886055344546933,
+      "max": 0.9886055344546935
+     },
+     "unseen_platform/AndIodine-SRV": {
+      "min": 0.9888279504367256,
+      "avg": 0.9910894441058975,
+      "max": 0.9946509580878868
+     },
+     "unseen_platform/AndIodine-TXT": {
+      "min": 0.9929529216012528,
+      "avg": 0.9929529216012527,
+      "max": 0.9929529216012528
+     }
+    }
+   },
+   {
+    "variant": "set to 1",
+    "value": 1,
+    "summary": {
+     "test_accuracy": {
+      "min": 0.9999183413494909,
+      "avg": 0.9999199745225011,
+      "max": 0.9999265072145418
+     },
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": 9.523809523809523e-06,
+      "avg": 1.714285714285714e-05,
+      "max": 1.9047619047619046e-05
+     },
+     "test_tunnel": {
+      "min": 0.9995418360918619,
+      "avg": 0.9995418360918619,
+      "max": 0.9995418360918619
+     },
+     "fpr_normal": {
+      "min": 3.934581032696368e-05,
+      "avg": 7.082245858853464e-05,
+      "max": 9.180689076291526e-05
+     },
+     "fpr_wildcard": {
+      "min": 0.10863586866244625,
+      "avg": 0.25158265812738784,
+      "max": 0.45151129239647353
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.10863586866244625,
+      "avg": 0.25158265812738784,
+      "max": 0.45151129239647353
+     },
+     "unseen_tool": {
+      "min": 0.9996154606386228,
+      "avg": 0.9996269608812061,
+      "max": 0.999644211245081
+     },
+     "unseen_platform": {
+      "min": 0.9938654005576909,
+      "avg": 0.9944291205064436,
+      "max": 0.9953576004220364
+     },
+     "unseen_tool/cobalstrike": {
+      "min": 0.9935475461122336,
+      "avg": 0.9937952160594408,
+      "max": 0.9940689565274067
+     },
+     "unseen_tool/dns2tcp-key": {
+      "min": 0.9997684850238749,
+      "avg": 0.999768485023875,
+      "max": 0.9997684850238749
+     },
+     "unseen_tool/dns2tcp-txt": {
+      "min": 0.9998447566560583,
+      "avg": 0.9999689513312117,
+      "max": 1.0
+     },
+     "unseen_tool/ozymandns": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "unseen_tool/tcp-over-dns-CNAME": {
+      "min": 0.9999925283362846,
+      "avg": 0.9999985056672569,
+      "max": 1.0
+     },
+     "unseen_tool/tcp-over-dns-TXT": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "unseen_platform/AndIodine-CNAME": {
+      "min": 0.9980354677710523,
+      "avg": 0.9980354677710522,
+      "max": 0.9980354677710523
+     },
+     "unseen_platform/AndIodine-MX": {
+      "min": 0.9965023427704085,
+      "avg": 0.9968323104335776,
+      "max": 0.9975582392925493
+     },
+     "unseen_platform/AndIodine-NULL": {
+      "min": 0.9886055344546935,
+      "avg": 0.9886055344546933,
+      "max": 0.9886055344546935
+     },
+     "unseen_platform/AndIodine-SRV": {
+      "min": 0.9888279504367256,
+      "avg": 0.9912925722797752,
+      "max": 0.9947186674791794
+     },
+     "unseen_platform/AndIodine-TXT": {
+      "min": 0.9929529216012528,
+      "avg": 0.9929529216012527,
+      "max": 0.9929529216012528
+     }
+    }
+   },
+   {
+    "variant": "set to 2",
+    "value": 2,
+    "summary": {
+     "test_accuracy": {
+      "min": 0.8630747748262713,
+      "avg": 0.8724165244445171,
+      "max": 0.8830403148757564
+     },
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_tunnel": {
+      "min": 0.039688448542466066,
+      "avg": 0.10520588740621957,
+      "max": 0.179714792967184
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 6.152218182265616e-06,
+      "max": 3.076109091132808e-05
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 6.152218182265616e-06,
+      "max": 3.076109091132808e-05
+     },
+     "unseen_tool": {
+      "min": 3.593825807263122e-06,
+      "avg": 0.0002091606619827137,
+      "max": 0.0008948626260085173
+     },
+     "unseen_platform": {
+      "min": 0.020905870826739014,
+      "avg": 0.02835481196774437,
+      "max": 0.04274625065943176
+     },
+     "unseen_tool/cobalstrike": {
+      "min": 6.517630189663039e-05,
+      "avg": 0.0010819266114840643,
+      "max": 0.0035846966043146713
+     },
+     "unseen_tool/dns2tcp-key": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_tool/dns2tcp-txt": {
+      "min": 0.0,
+      "avg": 0.0013195684235038422,
+      "max": 0.006597842117519211
+     },
+     "unseen_tool/ozymandns": {
+      "min": 0.0,
+      "avg": 0.0028396629343183655,
+      "max": 0.01258224633498788
+     },
+     "unseen_tool/tcp-over-dns-CNAME": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_tool/tcp-over-dns-TXT": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_platform/AndIodine-CNAME": {
+      "min": 0.00499097377083997,
+      "avg": 0.009620898375278752,
+      "max": 0.01481363491557821
+     },
+     "unseen_platform/AndIodine-MX": {
+      "min": 0.0036296442948591037,
+      "avg": 0.005701841219560483,
+      "max": 0.007655249785521019
+     },
+     "unseen_platform/AndIodine-NULL": {
+      "min": 0.006646771568095496,
+      "avg": 0.038198589256646764,
+      "max": 0.11190992946283233
+     },
+     "unseen_platform/AndIodine-SRV": {
+      "min": 0.004062563477554337,
+      "avg": 0.009492856659218634,
+      "max": 0.014896066084365901
+     },
+     "unseen_platform/AndIodine-TXT": {
+      "min": 0.10874033473622394,
+      "avg": 0.11664872271704023,
+      "max": 0.1366350200645982
+     }
+    }
+   },
+   {
+    "variant": "set to 3",
+    "value": 3,
+    "summary": {
+     "test_accuracy": {
+      "min": 0.8574158303459877,
+      "avg": 0.8577065351418003,
+      "max": 0.858428397612301
+     },
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.4,
+      "max": 1.0
+     },
+     "test_benign": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_tunnel": {
+      "min": 0.0,
+      "avg": 0.002038829391214707,
+      "max": 0.007101540576141115
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_tool": {
+      "min": 0.0,
+      "avg": 7.187651614526244e-07,
+      "max": 3.593825807263122e-06
+     },
+     "unseen_platform": {
+      "min": 0.0,
+      "avg": 0.0010792071746175296,
+      "max": 0.003511945135277715
+     },
+     "unseen_tool/cobalstrike": {
+      "min": 0.0,
+      "avg": 1.3035260379326078e-05,
+      "max": 6.517630189663039e-05
+     },
+     "unseen_tool/dns2tcp-key": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_tool/dns2tcp-txt": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_tool/ozymandns": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_tool/tcp-over-dns-CNAME": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_tool/tcp-over-dns-TXT": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_platform/AndIodine-CNAME": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_platform/AndIodine-MX": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_platform/AndIodine-NULL": {
+      "min": 0.0,
+      "avg": 0.0010851871947911015,
+      "max": 0.0031199131850244166
+     },
+     "unseen_platform/AndIodine-SRV": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "unseen_platform/AndIodine-TXT": {
+      "min": 0.0,
+      "avg": 0.006224919252226681,
+      "max": 0.020553978663012624
+     }
+    }
+   }
+  ],
+  "lofo-DNS-shell": [
+   {
+    "variant": "as recorded",
+    "value": null,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 7.869162065392736e-06,
+      "max": 1.3115270108987895e-05
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 5.167863273103117e-05,
+      "max": 0.00014765323637437478
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 5.167863273103117e-05,
+      "max": 0.00014765323637437478
+     },
+     "held_out_family": {
+      "min": 0.001052390757263784,
+      "avg": 0.06465339739190117,
+      "max": 0.2049416609471517
+     },
+     "held_out_family/DNS-shell": {
+      "min": 0.001052390757263784,
+      "avg": 0.06465339739190117,
+      "max": 0.2049416609471517
+     }
+    }
+   },
+   {
+    "variant": "set to 1",
+    "value": 1,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 7.869162065392736e-06,
+      "max": 1.3115270108987895e-05
+     },
+     "fpr_wildcard": {
+      "min": 0.0025039528001821057,
+      "avg": 0.07387952726355487,
+      "max": 0.1869228450317762
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0025039528001821057,
+      "avg": 0.07387952726355487,
+      "max": 0.1869228450317762
+     },
+     "held_out_family": {
+      "min": 0.001052390757263784,
+      "avg": 0.06465339739190117,
+      "max": 0.2049416609471517
+     },
+     "held_out_family/DNS-shell": {
+      "min": 0.001052390757263784,
+      "avg": 0.06465339739190117,
+      "max": 0.2049416609471517
+     }
+    }
+   },
+   {
+    "variant": "set to 2",
+    "value": 2,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 5.167863273103117e-05,
+      "max": 0.00014765323637437478
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 5.167863273103117e-05,
+      "max": 0.00014765323637437478
+     },
+     "held_out_family": {
+      "min": 0.001555708075955159,
+      "avg": 0.004044840997483414,
+      "max": 0.0064973690231068405
+     },
+     "held_out_family/DNS-shell": {
+      "min": 0.001555708075955159,
+      "avg": 0.004044840997483414,
+      "max": 0.0064973690231068405
+     }
+    }
+   },
+   {
+    "variant": "set to 3",
+    "value": 3,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.6,
+      "max": 1.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 2.623054021797579e-06,
+      "max": 1.3115270108987895e-05
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family": {
+      "min": 0.0,
+      "avg": 0.0010340883093113702,
+      "max": 0.004026538549530999
+     },
+     "held_out_family/DNS-shell": {
+      "min": 0.0,
+      "avg": 0.0010340883093113702,
+      "max": 0.004026538549530999
+     }
+    }
+   }
+  ],
+  "lofo-dnscat2": [
+   {
+    "variant": "as recorded",
+    "value": null,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 3.934581032696368e-05,
+      "avg": 3.934581032696368e-05,
+      "max": 3.934581032696368e-05
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family": {
+      "min": 0.9991775039572923,
+      "avg": 0.9995499549954996,
+      "max": 0.9999068872404482
+     },
+     "held_out_family/dnscat2-cname": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "held_out_family/dnscat2-mx": {
+      "min": 0.9979366994978004,
+      "avg": 0.9988710242535135,
+      "max": 0.9997664188110718
+     },
+     "held_out_family/dnscat2-txt": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     }
+    }
+   },
+   {
+    "variant": "set to 1",
+    "value": 1,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 3.934581032696368e-05,
+      "avg": 3.934581032696368e-05,
+      "max": 3.934581032696368e-05
+     },
+     "fpr_wildcard": {
+      "min": 0.09675593535249134,
+      "avg": 0.121740093390672,
+      "max": 0.1460413552106212
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.09675593535249134,
+      "avg": 0.121740093390672,
+      "max": 0.1460413552106212
+     },
+     "held_out_family": {
+      "min": 0.9991775039572923,
+      "avg": 0.9995499549954996,
+      "max": 0.9999068872404482
+     },
+     "held_out_family/dnscat2-cname": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "held_out_family/dnscat2-mx": {
+      "min": 0.9979366994978004,
+      "avg": 0.9988710242535135,
+      "max": 0.9997664188110718
+     },
+     "held_out_family/dnscat2-txt": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     }
+    }
+   },
+   {
+    "variant": "set to 2",
+    "value": 2,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family": {
+      "min": 0.7946708463949843,
+      "avg": 0.8538315900555574,
+      "max": 0.8694093547285763
+     },
+     "held_out_family/dnscat2-cname": {
+      "min": 0.94897597977244,
+      "avg": 0.9495929203539824,
+      "max": 0.9497850821744627
+     },
+     "held_out_family/dnscat2-mx": {
+      "min": 0.5398061276131896,
+      "avg": 0.687507299412154,
+      "max": 0.726515357963172
+     },
+     "held_out_family/dnscat2-txt": {
+      "min": 0.9788680438448567,
+      "avg": 0.9791842327150085,
+      "max": 0.9797112141652614
+     }
+    }
+   },
+   {
+    "variant": "set to 3",
+    "value": 3,
+    "summary": {
+     "collapsed": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/dnscat2-cname": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/dnscat2-mx": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/dnscat2-txt": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     }
+    }
+   }
+  ],
+  "lofo-dnspot": [
+   {
+    "variant": "as recorded",
+    "value": null,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 1.0492216087190315e-05,
+      "max": 2.623054021797579e-05
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family": {
+      "min": 0.013227414096751227,
+      "avg": 0.04099374227151797,
+      "max": 0.1493611121519841
+     },
+     "held_out_family/dnspot": {
+      "min": 0.013227414096751227,
+      "avg": 0.04099374227151797,
+      "max": 0.1493611121519841
+     }
+    }
+   },
+   {
+    "variant": "set to 1",
+    "value": 1,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 1.0492216087190315e-05,
+      "max": 2.623054021797579e-05
+     },
+     "fpr_wildcard": {
+      "min": 0.08106777898771401,
+      "avg": 0.21308207674276963,
+      "max": 0.41218631377543175
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.08106777898771401,
+      "avg": 0.21308207674276963,
+      "max": 0.41218631377543175
+     },
+     "held_out_family": {
+      "min": 0.013227414096751227,
+      "avg": 0.04099374227151797,
+      "max": 0.1493611121519841
+     },
+     "held_out_family/dnspot": {
+      "min": 0.013227414096751227,
+      "avg": 0.04099374227151797,
+      "max": 0.1493611121519841
+     }
+    }
+   },
+   {
+    "variant": "set to 2",
+    "value": 2,
+    "summary": {
+     "collapsed": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/dnspot": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     }
+    }
+   },
+   {
+    "variant": "set to 3",
+    "value": 3,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.6,
+      "max": 1.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 1.5738324130785472e-05,
+      "max": 5.246108043595158e-05
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/dnspot": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     }
+    }
+   }
+  ],
+  "lofo-iodine": [
+   {
+    "variant": "as recorded",
+    "value": null,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.002989978036581089,
+      "avg": 0.003035504451129855,
+      "max": 0.0031437834911377297
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.002989978036581089,
+      "avg": 0.003035504451129855,
+      "max": 0.0031437834911377297
+     },
+     "held_out_family": {
+      "min": 0.5682550449381041,
+      "avg": 0.5823299983042224,
+      "max": 0.596031880617263
+     },
+     "held_out_family/iodine-NULL": {
+      "min": 0.8167997542997543,
+      "avg": 0.8287469287469287,
+      "max": 0.8476658476658476
+     },
+     "held_out_family/iodine-a": {
+      "min": 0.0019200267134151432,
+      "avg": 0.0023374238250271307,
+      "max": 0.0032556974705735034
+     },
+     "held_out_family/iodine-cname": {
+      "min": 0.9997799537902959,
+      "avg": 0.999779953790296,
+      "max": 0.9997799537902959
+     },
+     "held_out_family/iodine-mx": {
+      "min": 0.7223431829963711,
+      "avg": 0.7884914463452566,
+      "max": 0.8421980300673925
+     },
+     "held_out_family/iodine-private": {
+      "min": 0.8687668196928922,
+      "avg": 0.8829824283678962,
+      "max": 0.9056514168117777
+     },
+     "held_out_family/iodine-srv": {
+      "min": 0.006767426122264832,
+      "avg": 0.010692533273178434,
+      "max": 0.01691856530566208
+     },
+     "held_out_family/iodine-txt": {
+      "min": 0.9975617189881134,
+      "avg": 0.9982627247790308,
+      "max": 0.9990856446205425
+     }
+    }
+   },
+   {
+    "variant": "set to 1",
+    "value": 1,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.01866582996499388,
+      "avg": 0.034022996991565316,
+      "max": 0.04650461723974579
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.01866582996499388,
+      "avg": 0.034022996991565316,
+      "max": 0.04650461723974579
+     },
+     "held_out_family": {
+      "min": 0.5682550449381041,
+      "avg": 0.5823299983042224,
+      "max": 0.596031880617263
+     },
+     "held_out_family/iodine-NULL": {
+      "min": 0.8167997542997543,
+      "avg": 0.8287469287469287,
+      "max": 0.8476658476658476
+     },
+     "held_out_family/iodine-a": {
+      "min": 0.0019200267134151432,
+      "avg": 0.0023374238250271307,
+      "max": 0.0032556974705735034
+     },
+     "held_out_family/iodine-cname": {
+      "min": 0.9997799537902959,
+      "avg": 0.999779953790296,
+      "max": 0.9997799537902959
+     },
+     "held_out_family/iodine-mx": {
+      "min": 0.7223431829963711,
+      "avg": 0.7884914463452566,
+      "max": 0.8421980300673925
+     },
+     "held_out_family/iodine-private": {
+      "min": 0.8687668196928922,
+      "avg": 0.8829824283678962,
+      "max": 0.9056514168117777
+     },
+     "held_out_family/iodine-srv": {
+      "min": 0.006767426122264832,
+      "avg": 0.010692533273178434,
+      "max": 0.01691856530566208
+     },
+     "held_out_family/iodine-txt": {
+      "min": 0.9975617189881134,
+      "avg": 0.9982627247790308,
+      "max": 0.9990856446205425
+     }
+    }
+   },
+   {
+    "variant": "set to 2",
+    "value": 2,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.002989978036581089,
+      "avg": 0.003035504451129855,
+      "max": 0.0031437834911377297
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.002989978036581089,
+      "avg": 0.003035504451129855,
+      "max": 0.0031437834911377297
+     },
+     "held_out_family": {
+      "min": 0.024080040698660335,
+      "avg": 0.032382567407156185,
+      "max": 0.05311175173817195
+     },
+     "held_out_family/iodine-NULL": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-a": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-cname": {
+      "min": 0.1534822312685664,
+      "avg": 0.15687094289800857,
+      "max": 0.15799317856749917
+     },
+     "held_out_family/iodine-mx": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-private": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-srv": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-txt": {
+      "min": 0.0038098140810728437,
+      "avg": 0.07372752209692167,
+      "max": 0.2584577872599817
+     }
+    }
+   },
+   {
+    "variant": "set to 3",
+    "value": 3,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.0013534880000984355,
+      "avg": 0.002148354589247153,
+      "max": 0.0026393016001919492
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0013534880000984355,
+      "avg": 0.002148354589247153,
+      "max": 0.0026393016001919492
+     },
+     "held_out_family": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-NULL": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-a": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-cname": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-mx": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-private": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-srv": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/iodine-txt": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     }
+    }
+   }
+  ],
+  "lofo-tuns": [
+   {
+    "variant": "as recorded",
+    "value": null,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 5.246108043595158e-05,
+      "avg": 7.082245858853464e-05,
+      "max": 0.00010492216087190316
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 7.505706182364051e-05,
+      "max": 0.00021532763637929656
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 7.505706182364051e-05,
+      "max": 0.00021532763637929656
+     },
+     "held_out_family": {
+      "min": 0.9997300944669366,
+      "avg": 0.9997300944669366,
+      "max": 0.9997300944669366
+     },
+     "held_out_family/tuns": {
+      "min": 0.9997300944669366,
+      "avg": 0.9997300944669366,
+      "max": 0.9997300944669366
+     }
+    }
+   },
+   {
+    "variant": "set to 1",
+    "value": 1,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 5.246108043595158e-05,
+      "avg": 7.082245858853464e-05,
+      "max": 0.00010492216087190316
+     },
+     "fpr_wildcard": {
+      "min": 0.16183409928449702,
+      "avg": 0.3639000141501018,
+      "max": 0.5106648702189575
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.16183409928449702,
+      "avg": 0.3639000141501018,
+      "max": 0.5106648702189575
+     },
+     "held_out_family": {
+      "min": 0.9997300944669366,
+      "avg": 0.9997300944669366,
+      "max": 0.9997300944669366
+     },
+     "held_out_family/tuns": {
+      "min": 0.9997300944669366,
+      "avg": 0.9997300944669366,
+      "max": 0.9997300944669366
+     }
+    }
+   },
+   {
+    "variant": "set to 2",
+    "value": 2,
+    "summary": {
+     "collapsed": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 7.505706182364051e-05,
+      "max": 0.00021532763637929656
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 7.505706182364051e-05,
+      "max": 0.00021532763637929656
+     },
+     "held_out_family": {
+      "min": 0.0032388663967611335,
+      "avg": 0.23753846153846156,
+      "max": 0.4909581646423752
+     },
+     "held_out_family/tuns": {
+      "min": 0.0032388663967611335,
+      "avg": 0.23753846153846156,
+      "max": 0.4909581646423752
+     }
+    }
+   },
+   {
+    "variant": "set to 3",
+    "value": 3,
+    "summary": {
+     "collapsed": {
+      "min": 1.0,
+      "avg": 1.0,
+      "max": 1.0
+     },
+     "test_benign": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "test_tunnel": {
+      "min": null,
+      "avg": null,
+      "max": null
+     },
+     "fpr_normal": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "fpr_wildcard_00007_00012": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     },
+     "held_out_family/tuns": {
+      "min": 0.0,
+      "avg": 0.0,
+      "max": 0.0
+     }
+    }
+   }
+  ]
+ }
+}

@@ -447,16 +447,29 @@ ALL_FEATURE_COLUMNS = list(dict.fromkeys(c for group in FEATURE_GROUPS.values() 
 #: Default model inputs: every feature except the artefact-suspect pair. In
 #: run 1 (results/zeek_run.md) dropping domain_qtype_diversity and
 #: no_response_ratio raised unseen-tool recall from 97.09% to 99.18% with
-#: false positive rates of 0.00% on held-out normal and wildcard. Both are
-#: still computed and stay available through FEATURE_SETS["all"].
+#: false positive rates of 0.00% on held-out normal and wildcard; run 3 showed
+#: the cost, unseen-family recall 62.88% -> 56.16%. Both effects come from
+#: domain_qtype_diversity, which in GraphTunnel only marks the wildcard
+#: captures and lets tunnels that mix query types pass as benign. Real
+#: clients mix A, AAAA and HTTPS queries for ordinary names, so the recall it
+#: buys rests on a pattern live traffic doesn't follow. Both are still
+#: computed and stay available through FEATURE_SETS["all"].
 FEATURE_COLUMNS = [c for c in ALL_FEATURE_COLUMNS if c not in FEATURE_GROUPS["artefact_suspect"]]
 
-#: Feature sets for the ablation runs. "all" is run 1's default.
+#: Feature sets for the ablation runs. Names are recorded in the results, so
+#: an existing name never changes meaning. "all" and "domain_volume_shape"
+#: are run 1's (with the artefact-suspect pair). From run 4 the ablations
+#: are subsets of the default: the default itself ("all" in its ablation
+#: table), "lexical_only" (which never held the pair) and
+#: "domain_volume_shape_minus_artefact_suspect".
 FEATURE_SETS = {
     "all": ALL_FEATURE_COLUMNS,
     "lexical_only": FEATURE_GROUPS["lexical"],
     "domain_volume_shape": FEATURE_GROUPS["domain_volume"] + FEATURE_GROUPS["domain_shape"],
     "all_minus_artefact_suspect": FEATURE_COLUMNS,
+    "domain_volume_shape_minus_artefact_suspect": [
+        c for c in FEATURE_GROUPS["domain_volume"] + FEATURE_GROUPS["domain_shape"]
+        if c not in FEATURE_GROUPS["artefact_suspect"]],
 }
 DEFAULT_FEATURE_SET = "all_minus_artefact_suspect"
 

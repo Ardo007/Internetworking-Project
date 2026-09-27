@@ -7,8 +7,9 @@ load_features       the feature table (every feature, not only the default
                     notebooks/dataset_zeek/ (gitignored) and rebuilt when the
                     manifest, Zeek logs, splits.csv, caps/seed or extraction
                     code change.
-split_masks,        row masks for a configuration or a leave-one-family-out
-lofo_masks          fold.
+split_masks,        row masks for a configuration, a leave-one-family-out
+lofo_masks,         fold, or the final model (every capture is training
+final_masks         data; not for evaluation).
 evaluate            metrics for one model's predictions on the test and
                     held-out rows (accuracy, false positive rates, recall per
                     unseen tool / platform capture).
@@ -16,16 +17,23 @@ window_size_rates   the same rates split by how many queries the row's window
                     holds.
 score_models,       evaluate every model of a configuration, in memory or
 rescore_saved       from a saved models/zeek_bilstm/... folder.
-save_result,        per-configuration results as JSON in
-load_run            results/runs/<run>/<name>.json (committed).
-write_run_section   render one run's section of results/zeek_run.md, next
-                    to a reference run, with loss-curve figures in
-                    results/figures/. Other sections of the file are left
-                    untouched.
+neutralised_scores  how saved models respond when one input is neutralised,
+                    or (forced_feature_scores) set to fixed values;
+                    inference only.
+save_result,       per-configuration results as JSON in
+load_run            results/runs/<run>/<name>.json (committed);
+                    save_training_record writes the final model's record
+                    (no metrics), which load_run skips.
+write_run_report    render one run's section of results/zeek_run.md from
+                    results/runs/<run>/run.json: a run next to a reference
+                    run, a comparison of leave-one-family-out runs, or the
+                    results at the default settings gathered from several
+                    runs. Other sections of the file are left untouched.
 """
 import hashlib
 import json
 import math
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -79,10 +87,16 @@ def _normalised_bytes(path):
     return Path(path).read_bytes().replace(b"\r\n", b"\n")
 
 
+#: Bump when load_features changes what it writes. (The rest of this module,
+#: e.g. the report code, doesn't affect the cache, so its source isn't hashed.)
+CACHE_VERSION = 2
+
+
 def _fingerprint(manifest_rows):
     digest = hashlib.sha256()
-    for source in (ds.SPLITS_PATH, zfe.__file__, ds.__file__, dns_feature_extraction.__file__, __file__):
+    for source in (ds.SPLITS_PATH, zfe.__file__, ds.__file__, dns_feature_extraction.__file__):
         digest.update(_normalised_bytes(source))
+    digest.update(f"cache version {CACHE_VERSION}".encode())
     for row in manifest_rows:
         for path in zfe._dns_log_paths(row):
             stat = path.stat()
@@ -124,8 +138,6 @@ def load_features(rebuild=False, n_jobs=8, verbose=True):
         table[f"role_{config}"] = assignment["role"]
         table[f"sample_{config}"] = ds.fit_sample_mask(df, assignment)
 
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    table.to_csv(FEATURES_CSV, index=False, lineterminator="\n")
     meta = {
         "fingerprint": fingerprint,
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -135,11 +147,33 @@ def load_features(rebuild=False, n_jobs=8, verbose=True):
         "sampling_seed": ds.SAMPLING_SEED,
         "capture_stats": df.attrs["capture_stats"],
     }
-    CACHE_META.write_text(json.dumps(meta, indent=1), encoding="utf-8")
     table.attrs["capture_stats"] = meta["capture_stats"]
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        # Write-then-rename, so a reader (or a second process building the
+        # same cache) never sees a half-written file.
+        _write_atomic(FEATURES_CSV, lambda path: table.to_csv(path, index=False, lineterminator="\n"))
+        _write_atomic(CACHE_META, lambda path: path.write_text(json.dumps(meta, indent=1), encoding="utf-8"))
+    except PermissionError:
+        # Another process has the cache open (Windows); keep this table in memory.
+        if verbose:
+            print(f"Built {len(table):,} rows; {FEATURES_CSV} is in use, so the cache was not updated")
+        return table
     if verbose:
         print(f"Built {len(table):,} rows and wrote {FEATURES_CSV}")
     return table
+
+
+def _write_atomic(path, write):
+    """Call write(temporary path), then move it over `path` in one step."""
+    path = Path(path)
+    temporary = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        write(temporary)
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
 
 
 def split_masks(table, config):
@@ -190,6 +224,36 @@ def lofo_masks(table, family, config=ds.PRIMARY_CONFIG):
         return meta
 
     return fold, relabel
+
+
+#: Written into the final model's features.json, NOT_FOR_EVALUATION.txt and
+#: results record.
+FINAL_MODEL_NOTE = (
+    "Final model, not for evaluation. It was trained on every GraphTunnel capture, including the unseen tools "
+    "(unknownTunnel) and the unseen platform (crossEndPoint), so no GraphTunnel data is left that it hasn't "
+    "been trained on, and scoring it there measures nothing. Use it to score new traffic. Its evaluated "
+    "counterpart is config B at the same settings (see results/zeek_run.md).")
+
+
+def final_masks(table, config=ds.PRIMARY_CONFIG):
+    """Row masks for the final model, which trains on every capture.
+
+    train: the rows ds.cap_mask keeps in every window of every capture,
+    whatever its split or category (unseen tools, the unseen platform and
+    gap windows included): the same rows `config` samples wherever it
+    samples, and the same caps and seed everywhere else. val: `config`'s
+    validation rows, which are training rows here too. Build_model needs a
+    validation loss for early stopping and the learning-rate schedule; here
+    it can't show overfitting, and nothing about this model is evaluated.
+    test and evaluation are the val rows as well, only so the notebook's
+    input preparation has rows to transform.
+    """
+    train = ds.cap_mask(table)
+    sampled = table[f"split_{config}"].isin(ds.SAMPLED_SPLITS).fillna(False).astype(bool)
+    if not train[sampled].equals(table.loc[sampled, f"sample_{config}"]):
+        raise ValueError(f"ds.cap_mask disagrees with the cached sample_{config}; rebuild the feature cache")
+    val = split_masks(table, config)["val"]
+    return {"train": train, "val": val, "test": val, "evaluation": val}
 
 
 # ---------------------------------------------------------- evaluation --
@@ -281,6 +345,7 @@ def rescore_saved(table, directory, config, masks=None, relabel=None):
     import model_artifacts as ma
 
     artifacts = ma.load_artifacts(directory)
+    _require_evaluable(artifacts)
     spec = artifacts["features"]
     masks = {**split_masks(table, config), **(masks or {})}
     meta = evaluation_meta(table, config, masks["evaluation"])
@@ -312,6 +377,169 @@ def rescore_saved(table, directory, config, masks=None, relabel=None):
         "source": "re-scored from the saved models in "
                   f"`{Path(directory).parent.relative_to(zfe.PROJECT_ROOT).as_posix()}/<name>/`",
     }
+
+
+def _require_evaluable(artifacts):
+    if artifacts["features"].get("not_for_evaluation"):
+        raise ValueError(f"{artifacts.get('directory', 'this model')} was trained on every capture "
+                         "(not_for_evaluation); scoring it on GraphTunnel data measures nothing")
+
+
+def _saved_model_inputs(table, directory, config, masks, relabel):
+    """(artifacts, evaluation meta, scaled inputs, tunnel class index) for
+    scoring the models saved in `directory` on `config`'s evaluation rows."""
+    import model_artifacts as ma
+
+    artifacts = ma.load_artifacts(directory)
+    _require_evaluable(artifacts)
+    masks = {**split_masks(table, config), **(masks or {})}
+    meta = evaluation_meta(table, config, masks["evaluation"])
+    if relabel is not None:
+        meta = relabel(meta)
+    X = ma.prepare_model_input(table.loc[masks["evaluation"]], artifacts)
+    return artifacts, meta, X, list(artifacts["label_encoder"].classes_).index("tunnel")
+
+
+def _score_inputs(models, X, meta, tunnel):
+    return summarise([evaluate(meta, model.predict(X, batch_size=8192, verbose=0).argmax(axis=1) == tunnel)
+                      for model in models])
+
+
+def neutralised_scores(table, directory, config, features, masks=None, relabel=None):
+    """Score saved models with each of `features`, and then all of them,
+    replaced by the training mean (0 after scaling).
+
+    Inference only: it shows how much the saved models rely on each feature,
+    which retraining without the feature doesn't isolate (the retrained model
+    adapts). Returns [{"variant", "neutralised", "summary"}], the first being
+    the models as trained.
+    """
+    artifacts, meta, X, tunnel = _saved_model_inputs(table, directory, config, masks, relabel)
+    columns = artifacts["features"]["input_columns"]
+    variants = [("as trained", [])] + [(f"without {f}", [f]) for f in features]
+    if len(features) > 1:
+        variants.append(("without both" if len(features) == 2 else "without all", list(features)))
+    out = []
+    for label, dropped in variants:
+        X_variant = X.copy()
+        for feature in dropped:
+            X_variant[:, 0, columns.index(feature)] = 0.0
+        out.append({"variant": label, "neutralised": dropped,
+                    "summary": _score_inputs(artifacts["models"], X_variant, meta, tunnel)})
+    return out
+
+
+def forced_feature_scores(table, directory, config, feature, values, masks=None, relabel=None):
+    """Score saved models as recorded, then with `feature` set to each of
+    `values` on every scored row (scaled with the saved scaler).
+
+    Inference only, like neutralised_scores: only that one input changes, so
+    it shows how the models' decisions depend on the feature's value.
+    Returns [{"variant", "value", "summary"}], the first being the rows as
+    recorded (value None).
+    """
+    artifacts, meta, X, tunnel = _saved_model_inputs(table, directory, config, masks, relabel)
+    column = artifacts["features"]["input_columns"].index(feature)
+    scaler = artifacts["scaler"]
+    out = []
+    for value in [None] + list(values):
+        X_variant = X.copy()
+        if value is not None:
+            X_variant[:, 0, column] = (value - scaler.mean_[column]) / scaler.scale_[column]
+        out.append({"variant": "as recorded" if value is None else f"set to {value}", "value": value,
+                    "summary": _score_inputs(artifacts["models"], X_variant, meta, tunnel)})
+    return out
+
+
+def save_diagnostic(run_name, name, payload, runs_dir=RUNS_DIR):
+    """Write results/runs/<run>/diagnostics/<name>.json (not a configuration
+    result, so load_run ignores it). Summaries are stored as dicts."""
+    def encode(value):
+        if isinstance(value, pd.DataFrame):
+            return value.to_dict(orient="index")
+        if isinstance(value, dict):
+            return {k: encode(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [encode(v) for v in value]
+        return value
+    path = Path(runs_dir) / run_name / "diagnostics" / f"{name}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(_jsonable(encode(payload)), indent=1)
+    _write_atomic(path, lambda temporary: temporary.write_text(text, encoding="utf-8"))
+    return path
+
+
+def load_diagnostic(run_name, name, runs_dir=RUNS_DIR):
+    return json.loads((Path(runs_dir) / run_name / "diagnostics" / f"{name}.json").read_text(encoding="utf-8"))
+
+
+def write_feature_neutralisation(run_name, table, models_root, names, features, description,
+                                 config=ds.PRIMARY_CONFIG, runs_dir=RUNS_DIR):
+    """neutralised_scores for each saved configuration in `names` (folds use
+    their leave-one-family-out rows), plus how often each traffic type has
+    more than one query type per domain window. Written to
+    results/runs/<run>/diagnostics/feature_neutralisation.json."""
+    results = {}
+    for name in names:
+        masks, relabel = lofo_masks(table, name.removeprefix("lofo-"), config) if name.startswith("lofo-") else (None, None)
+        results[name] = neutralised_scores(table, Path(models_root) / name, config, features, masks, relabel)
+    groups = {"normal (train)": table["category"].eq("normal") & table[f"split_{config}"].eq("train"),
+              f"wildcard (train, config {config})": table["category"].eq("wildcard") & table[f"split_{config}"].eq("train")}
+    for category in ("tunnel", "unknownTunnel", "crossEndPoint"):
+        for tool in sorted(table.loc[table["category"].eq(category), "tool"].unique()):
+            groups[tool] = table["category"].eq(category) & table["tool"].eq(tool)
+    feature_values = {name: {"rows": int(mask.sum()),
+                             "share_above_1": float(100 * (table.loc[mask, "domain_qtype_diversity"] > 1).mean())}
+                      for name, mask in groups.items()}
+    models = Path(models_root).relative_to(zfe.PROJECT_ROOT).as_posix() + "/<name>/"
+    return save_diagnostic(run_name, "feature_neutralisation", {
+        "description": description, "models": models, "features": list(features), "results": results,
+        "feature_values": feature_values}, runs_dir)
+
+
+def write_forced_feature_probe(run_name, diagnostic, table, models_root, names, feature, values, title,
+                               description, config=ds.PRIMARY_CONFIG, runs_dir=RUNS_DIR):
+    """forced_feature_scores for each saved configuration in `names` (folds
+    use their leave-one-family-out rows), written to
+    results/runs/<run>/diagnostics/<diagnostic>.json with the heading and
+    text of its report subsection."""
+    results = {}
+    for name in names:
+        masks, relabel = lofo_masks(table, name.removeprefix("lofo-"), config) if name.startswith("lofo-") else (None, None)
+        results[name] = forced_feature_scores(table, Path(models_root) / name, config, feature, values, masks, relabel)
+    models = Path(models_root).relative_to(zfe.PROJECT_ROOT).as_posix() + "/<name>/"
+    return save_diagnostic(run_name, diagnostic, {
+        "title": title, "description": description, "models": models, "feature": feature, "values": list(values),
+        "results": results}, runs_dir)
+
+
+def render_forced_feature_probe(data):
+    """Markdown tables for a write_forced_feature_probe diagnostic: one for
+    the main configurations, one for the leave-one-family-out folds."""
+    variants = [v["variant"] for v in next(iter(data["results"].values()))]
+    out = [f"### {data['title']}", "", data["description"], ""]
+    for name, entries in data["results"].items():
+        if name.startswith("lofo-"):
+            continue
+        by_variant = {e["variant"]: e["summary"] for e in entries}
+        metrics = ["fpr_normal", "fpr_wildcard", "unseen_tool", "unseen_tool/ozymandns", "unseen_tool/cobalstrike",
+                   "unseen_platform"]
+        rows = [[_metric_label(m) if "/" not in m else f"&nbsp;&nbsp;{m.split('/', 1)[1]}"]
+                + [_pct(by_variant[v].get(m, {}).get("avg", math.nan)) for v in variants] for m in metrics]
+        out += [f"Config `{name}` models (`{data['models'].replace('<name>', name)}`), average over their 5 models:",
+                "", md_table(["metric"] + variants, rows), ""]
+    rows = []
+    for name, entries in data["results"].items():
+        if not name.startswith("lofo-"):
+            continue
+        by_variant = {e["variant"]: e["summary"] for e in entries}
+        for metric, label in (("held_out_family", name.removeprefix("lofo-") + " recall"),
+                              ("fpr_normal", "&nbsp;&nbsp;FPR normal"), ("fpr_wildcard", "&nbsp;&nbsp;FPR wildcard")):
+            rows.append([label] + [_pct(by_variant[v].get(metric, {}).get("avg", math.nan)) for v in variants])
+    if rows:
+        out += [f"Fold models (`{data['models']}`), average over their 5 models:", "",
+                md_table(["fold"] + variants, rows), ""]
+    return out
 
 
 # ------------------------------------------------------ training curves --
@@ -385,6 +613,12 @@ def _jsonable(value):
     return value
 
 
+def result_path(run_name, name, runs_dir=RUNS_DIR):
+    """results/runs/<run>/<name>.json. The file is written last, after the
+    configuration's models are saved, so it marks the configuration done."""
+    return Path(runs_dir) / run_name / f"{name}.json"
+
+
 def save_result(run_name, name, result, runs_dir=RUNS_DIR):
     """Write one configuration's result to results/runs/<run>/<name>.json."""
     keep = ("config", "feature_set", "per_run", "epochs", "histories", "input_columns", "train_rows",
@@ -392,21 +626,61 @@ def save_result(run_name, name, result, runs_dir=RUNS_DIR):
     payload = {"run": run_name, "name": name, **{k: result.get(k) for k in keep if k in result}}
     payload["summary"] = result["summary"].to_dict(orient="index")
     payload["window_sizes"] = result["window_sizes"].to_dict(orient="records")
-    path = Path(runs_dir) / run_name / f"{name}.json"
+    path = result_path(run_name, name, runs_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(_jsonable(payload), indent=1), encoding="utf-8")
+    text = json.dumps(_jsonable(payload), indent=1)
+    _write_atomic(path, lambda temporary: temporary.write_text(text, encoding="utf-8"))
     return path
 
 
+def save_training_record(run_name, name, record, runs_dir=RUNS_DIR):
+    """Write results/runs/<run>/<name>.json for a model that is not
+    evaluated (the final model): training rows, settings and loss
+    histories, no metrics, and "not_for_evaluation": true. Like a result
+    file it is written last and marks the model as done; load_run skips
+    it."""
+    payload = {"run": run_name, "name": name, "not_for_evaluation": True, **record}
+    path = result_path(run_name, name, runs_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(_jsonable(payload), indent=1)
+    _write_atomic(path, lambda temporary: temporary.write_text(text, encoding="utf-8"))
+    return path
+
+
+def load_training_record(run_name, name, runs_dir=RUNS_DIR):
+    return json.loads(result_path(run_name, name, runs_dir).read_text(encoding="utf-8"))
+
+
+#: Per-run report settings (title, description, reference run, layout) in
+#: results/runs/<run>/run.json; not a configuration result.
+RUN_METADATA = "run.json"
+
+
+def _parse_result(result):
+    result["summary"] = pd.DataFrame.from_dict(result["summary"], orient="index").astype(float)
+    result["window_sizes"] = pd.DataFrame(result["window_sizes"])
+    return result
+
+
+def load_result(run_name, name, runs_dir=RUNS_DIR):
+    """One configuration's result, as load_run returns it."""
+    result = json.loads(result_path(run_name, name, runs_dir).read_text(encoding="utf-8"))
+    if result.get("not_for_evaluation"):
+        raise ValueError(f"{run_name}/{name} has no evaluation results (not_for_evaluation)")
+    return _parse_result(result)
+
+
 def load_run(run_name, runs_dir=RUNS_DIR):
-    """name -> result for every configuration saved under results/runs/<run>/."""
+    """name -> result for every evaluated configuration saved under
+    results/runs/<run>/ (not run.json, not the final model's record)."""
     results = {}
     for path in sorted((Path(runs_dir) / run_name).glob("*.json")):
+        if path.name == RUN_METADATA:
+            continue
         result = json.loads(path.read_text(encoding="utf-8"))
-        summary = pd.DataFrame.from_dict(result["summary"], orient="index")
-        result["summary"] = summary.astype(float)
-        result["window_sizes"] = pd.DataFrame(result["window_sizes"])
-        results[result["name"]] = result
+        if result.get("not_for_evaluation"):
+            continue
+        results[result["name"]] = _parse_result(result)
     if not results:
         raise FileNotFoundError(f"No results in {Path(runs_dir) / run_name}")
     return results
@@ -448,9 +722,49 @@ def _metric_label(metric):
     return labels.get(metric) or ROLE_GROUPS.get(metric, (metric,))[0]
 
 
-def upsert_section(path, section_id, markdown):
+#: Rows of a main configuration's metric table, in order.
+MAIN_METRICS = ["test_accuracy", "test_benign", "test_tunnel", "fpr_normal", "fpr_wildcard_00007_00012",
+                "fpr_wildcard", "fpr_own_benign", "unseen_tool", "unseen_platform"]
+PER_CAPTURE_TABLES = (("unseen_tool", "Recall per unseen tool"),
+                      ("unseen_platform", "Recall per unseen-platform capture (iodine on Android)"))
+
+
+def _metric_rows(cols, metrics):
+    """One row per metric any of the (label, result) columns has."""
+    return [[_metric_label(m)] + [_spread(r["summary"], m) for _, r in cols]
+            for m in metrics if any(m in r["summary"].index for _, r in cols)]
+
+
+def _per_capture_rows(cols, role):
+    """One row per capture of `role` (e.g. every unseen tool)."""
+    tools = sorted({m.split("/", 1)[1] for _, r in cols for m in r["summary"].index if m.startswith(role + "/")})
+    return [[tool] + [_spread(r["summary"], f"{role}/{tool}") for _, r in cols] for tool in tools]
+
+
+def _window_size_rows(cols):
+    """group, bucket, rows, then the average rate of each column; empty
+    buckets left out."""
+    groups = list(dict.fromkeys(g for _, r in cols for g in r["window_sizes"]["group"]))
+    rows = []
+    for group in groups:
+        for _, _, bucket in WINDOW_SIZE_BUCKETS:
+            cells, bucket_rows = [], 0
+            for _, r in cols:
+                sizes = r["window_sizes"]
+                cell = sizes[(sizes["group"] == group) & (sizes["bucket"] == bucket)]
+                empty = cell.empty or cell["rows"].iloc[0] == 0
+                bucket_rows = bucket_rows or (0 if empty else int(cell["rows"].iloc[0]))
+                cells.append("–" if empty else _pct(cell["rate"].iloc[0]))
+            if bucket_rows:
+                rows.append([_metric_label(group), bucket, f"{bucket_rows:,}"] + cells)
+    return rows
+
+
+def upsert_section(path, section_id, markdown, at_top=False):
     """Replace the text between <!-- section:<id>:start/end --> markers in
-    `path` (or append it), leaving the rest of the file untouched."""
+    `path`, leaving the rest of the file untouched. A new section is
+    appended, or with `at_top` inserted after the file's first line (its
+    title)."""
     path = Path(path)
     start, end = f"<!-- section:{section_id}:start -->", f"<!-- section:{section_id}:end -->"
     block = f"{start}\n{markdown.strip()}\n{end}\n"
@@ -458,6 +772,9 @@ def upsert_section(path, section_id, markdown):
     pattern = re.compile(re.escape(start) + r".*?" + re.escape(end) + r"\n?", re.DOTALL)
     if pattern.search(text):
         text = pattern.sub(lambda _: block, text)
+    elif at_top and text:
+        title, _, rest = text.partition("\n")
+        text = f"{title}\n\n{block}\n{rest.lstrip(chr(10))}"
     else:
         text = text.rstrip("\n") + ("\n\n" if text else "") + block
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -551,34 +868,17 @@ def render_run_section(run_name, title, description=(), reference_name=None, run
         cols = _columns(name, run, reference, run_label, reference_label, extra_reference)
         out += [f"### Config {name}", "",
                 "Average over the runs, min – max in brackets. Rates are the share of rows classified as tunnel.", ""]
-        metrics = ["test_accuracy", "test_benign", "test_tunnel", "fpr_normal", "fpr_wildcard_00007_00012",
-                   "fpr_wildcard", "fpr_own_benign", "unseen_tool", "unseen_platform"]
-        rows = [[_metric_label(m)] + [_spread(r["summary"], m) for _, r in cols]
-                for m in metrics if any(m in r["summary"].index for _, r in cols)]
+        rows = _metric_rows(cols, MAIN_METRICS)
         rows.append(["Collapsed runs"] + [_collapsed(r) for _, r in cols])
         rows.append(["Epochs trained"] + [", ".join(map(str, r.get("epochs") or [])) for _, r in cols])
         out += [md_table(["metric"] + [label for label, _ in cols], rows), ""]
-        for role, heading in (("unseen_tool", "Recall per unseen tool"),
-                              ("unseen_platform", "Recall per unseen-platform capture (iodine on Android)")):
-            tools = sorted({m.split("/", 1)[1] for _, r in cols for m in r["summary"].index if m.startswith(role + "/")})
-            rows = [[tool] + [_spread(r["summary"], f"{role}/{tool}") for _, r in cols] for tool in tools]
-            out += [f"**{heading}, config {name}**", "", md_table(["capture"] + [label for label, _ in cols], rows), ""]
+        for role, heading in PER_CAPTURE_TABLES:
+            out += [f"**{heading}, config {name}**", "",
+                    md_table(["capture"] + [label for label, _ in cols], _per_capture_rows(cols, role)), ""]
         out += [f"**By window size, config {name}**: average rate per bucket of queries in the row's 60 s window "
                 "(empty buckets left out).", ""]
-        groups = list(dict.fromkeys(g for _, r in cols for g in r["window_sizes"]["group"]))
-        rows = []
-        for group in groups:
-            for _, _, bucket in WINDOW_SIZE_BUCKETS:
-                cells, bucket_rows = [], 0
-                for _, r in cols:
-                    sizes = r["window_sizes"]
-                    cell = sizes[(sizes["group"] == group) & (sizes["bucket"] == bucket)]
-                    empty = cell.empty or cell["rows"].iloc[0] == 0
-                    bucket_rows = bucket_rows or (0 if empty else int(cell["rows"].iloc[0]))
-                    cells.append("–" if empty else _pct(cell["rate"].iloc[0]))
-                if bucket_rows:
-                    rows.append([_metric_label(group), bucket, f"{bucket_rows:,}"] + cells)
-        out += [md_table(["group", "queries in window", "rows"] + [label for label, _ in cols], rows), ""]
+        out += [md_table(["group", "queries in window", "rows"] + [label for label, _ in cols],
+                         _window_size_rows(cols)), ""]
 
     # ablations
     ablations = [n for n in run if n.startswith("B-")]
@@ -623,3 +923,358 @@ def write_run_section(run_name, title, report_path=REPORT_PATH, **kwargs):
     report_path = Path(report_path)
     markdown = render_run_section(run_name, title, figures_dir=report_path.parent / "figures", **kwargs)
     return upsert_section(report_path, run_name, markdown)
+
+
+def _avg(result, metric):
+    summary = result["summary"]
+    return summary.loc[metric, "avg"] if metric in summary.index else math.nan
+
+
+def _pp(value):
+    return "n/a" if math.isnan(value) else f"{100 * value:+.2f} pp"
+
+
+def _row_weighted(results, folds):
+    """Share of all held-out-family rows detected, over the given folds."""
+    rows = {fold: results[fold].get("family_rows") or 0 for fold in folds}
+    total = sum(rows.values())
+    return sum(rows[f] * _avg(results[f], "held_out_family") for f in folds) / total if total else math.nan
+
+
+def render_lofo_comparison(run_name, title, columns, description=(), effects=(), highlight_captures=(),
+                           diagnostic=None, probe=None, findings=(), runs_dir=RUNS_DIR):
+    """Markdown comparing the leave-one-family-out folds of several runs.
+
+    columns: [{"run", "label", "features", "epochs"}], the last one being
+    this run. effects: [{"label", "from", "to"}] (run names), shown as the
+    difference in average recall. diagnostic: name of a file in
+    results/runs/<run>/diagnostics/ written from neutralised_scores; probe:
+    one written by write_forced_feature_probe.
+    """
+    runs = {c["run"]: load_run(c["run"], runs_dir) for c in columns}
+    this = runs[run_name]
+    folds = [n for n in this if n.startswith("lofo-")]
+    labels = {c["run"]: c["label"] for c in columns}
+    head = [f"{c['label']} ({c['features']} features, {c['epochs']} epochs)" for c in columns]
+    first = this[folds[0]]
+    git = first.get("git") or {}
+    out = [f"## {title}", ""] + list(description) + [""]
+    out += [f"- Run `{run_name}`: {', '.join(f'`{f}`' for f in folds)}; trained "
+            f"{min(this[f].get('trained_at') or '' for f in folds)} – {max(this[f].get('trained_at') or '' for f in folds)}.",
+            f"- Git commit: `{git.get('commit')}`" + (" (working tree had uncommitted changes)" if git.get("dirty") else ""),
+            "- Versions: " + ", ".join(f"{k} {v}" for k, v in (first.get("environment") or {}).items() if k != "platform"),
+            f"- Models: `models/zeek_bilstm/{run_name}/<fold>/`; results: `results/runs/{run_name}/<fold>.json`.", ""]
+
+    rows = []
+    for key in ("epoch_cap", "row_caps", "sampling_seed", "window_seconds", "splits_sha256"):
+        rows.append([key] + [f"`{runs[c['run']][folds[0]]['settings'].get(key)}`" for c in columns])
+    rows.append(["feature set"] + [f"`{runs[c['run']][folds[0]].get('feature_set')}`" for c in columns])
+    out += ["### Settings", "", md_table(["setting"] + [c["label"] for c in columns], rows), ""]
+
+    # the 2x2 grid of row-weighted recall
+    feature_values = list(dict.fromkeys(c["features"] for c in columns))
+    epoch_values = sorted({c["epochs"] for c in columns})
+    grid = []
+    for features in feature_values:
+        cells = []
+        for epochs in epoch_values:
+            match = [c for c in columns if c["features"] == features and c["epochs"] == epochs]
+            cells.append(f"{match[0]['label']}: **{_pct(_row_weighted(runs[match[0]['run']], folds))}**" if match
+                         else "not run")
+        grid.append([f"{features} features"] + cells)
+    total_rows = sum(this[f].get("family_rows") or 0 for f in folds)
+    out += ["### Unseen-family recall", "",
+            f"Share of all {total_rows:,} held-out-family rows detected, over the five folds (each fold's average "
+            "over its 5 models, weighted by the family's rows):", "",
+            md_table([""] + [f"{e} epochs" for e in epoch_values], grid), ""]
+
+    header = ["held-out family", "rows"] + head + [e["label"] for e in effects]
+    rows = []
+    for fold in folds:
+        row = [fold.removeprefix("lofo-"), f"{this[fold].get('family_rows', 0):,}"]
+        row += [_spread(runs[c["run"]][fold]["summary"], "held_out_family") for c in columns]
+        row += [_pp(_avg(runs[e["to"]][fold], "held_out_family") - _avg(runs[e["from"]][fold], "held_out_family"))
+                for e in effects]
+        rows.append(row)
+    row = ["**all five (row-weighted)**", f"{total_rows:,}"] + [_pct(_row_weighted(runs[c["run"]], folds)) for c in columns]
+    row += [_pp(_row_weighted(runs[e["to"]], folds) - _row_weighted(runs[e["from"]], folds)) for e in effects]
+    rows.append(row)
+    out += ["Per family: average recall over the 5 models (min – max). The last columns are differences in the "
+            "average, in percentage points.", "", md_table(header, rows), ""]
+
+    header = ["held-out family"] + [f"FPR normal · {c['label']}" for c in columns] + \
+             [f"FPR wildcard · {c['label']}" for c in columns]
+    rows = [[fold.removeprefix("lofo-")] + [_pct(_avg(runs[c["run"]][fold], "fpr_normal")) for c in columns]
+            + [_pct(_avg(runs[c["run"]][fold], "fpr_wildcard")) for c in columns] for fold in folds]
+    out += ["False positive rates on the held-out benign captures stay near zero in every run:", "",
+            md_table(header, rows), ""]
+
+    captures = []
+    for fold in folds:
+        for metric in this[fold]["summary"].index:
+            if metric.startswith("held_out_family/"):
+                captures.append((fold, metric.split("/", 1)[1]))
+    order = {c: i for i, c in enumerate(highlight_captures)}
+    captures.sort(key=lambda fc: (order.get(fc[1], len(order)), fc[0], fc[1]))
+    header = ["capture", "family"] + head + [e["label"] for e in effects]
+    rows = []
+    for fold, capture in captures:
+        metric = f"held_out_family/{capture}"
+        name = f"**{capture}**" if capture in order else capture
+        rows.append([name, fold.removeprefix("lofo-")] + [_spread(runs[c["run"]][fold]["summary"], metric) for c in columns]
+                    + [_pp(_avg(runs[e["to"]][fold], metric) - _avg(runs[e["from"]][fold], metric)) for e in effects])
+    out += ["### Per capture", "",
+            "Recall on each capture of the held-out family" + (f" ({', '.join(highlight_captures)} first)"
+                                                              if highlight_captures else "") + ":", "",
+            md_table(header, rows), ""]
+
+    if diagnostic:
+        data = load_diagnostic(run_name, diagnostic, runs_dir)
+        variants = [v["variant"] for v in next(iter(data["results"].values()))]
+        out += ["### Which of the two features?", "", data["description"], ""]
+        rows = []
+        for name, entries in data["results"].items():
+            if not name.startswith("lofo-"):
+                continue
+            by_variant = {e["variant"]: e["summary"] for e in entries}
+            metrics = [("held_out_family", name.removeprefix("lofo-") + " recall")]
+            metrics += [(f"held_out_family/{c}", f"&nbsp;&nbsp;{c}") for c in highlight_captures
+                        if f"held_out_family/{c}" in by_variant["as trained"]]
+            metrics += [("fpr_wildcard", "&nbsp;&nbsp;FPR wildcard")]
+            for metric, label in metrics:
+                rows.append([label] + [_pct(by_variant[v].get(metric, {}).get("avg", math.nan)) for v in variants])
+        if rows:
+            out += [f"Run 1 fold models (`{data['models']}`), average over their 5 models:", "",
+                    md_table(["fold / capture"] + variants, rows), ""]
+        for name, entries in data["results"].items():
+            if name.startswith("lofo-"):
+                continue
+            by_variant = {e["variant"]: e["summary"] for e in entries}
+            metric_names = ["unseen_tool", "unseen_tool/ozymandns", "unseen_tool/cobalstrike", "unseen_platform",
+                            "fpr_normal", "fpr_wildcard"]
+            rows = [[_metric_label(m) if "/" not in m else f"&nbsp;&nbsp;{m.split('/', 1)[1]}"]
+                    + [_pct(by_variant[v].get(m, {}).get("avg", math.nan)) for v in variants] for m in metric_names]
+            out += [f"Run 1 config `{name}` models, average over their 5 models:", "",
+                    md_table(["metric"] + variants, rows), ""]
+        if data.get("feature_values"):
+            out += ["Share of rows whose domain has more than one query type in its 60 s window "
+                    "(`domain_qtype_diversity` > 1):", "",
+                    md_table(["traffic", "rows", "> 1 query type"],
+                             [[k, f"{v['rows']:,}", f"{v['share_above_1']:.2f}%"] for k, v in data["feature_values"].items()]),
+                    ""]
+    if probe:
+        out += render_forced_feature_probe(load_diagnostic(run_name, probe, runs_dir))
+
+    curves = {fold: training_curves(this[fold].get("histories"), this[fold]["settings"]["epoch_cap"]) for fold in folds
+              if this[fold].get("histories")}
+    if curves:
+        rows = [[f"`{fold}`", ", ".join(map(str, c["stopped_epoch"])), ", ".join(map(str, c["best_epoch"])),
+                 ", ".join(f"{v:.2e}" for v in c["best_val_loss"])] for fold, c in curves.items()]
+        out += ["### Training length", "",
+                md_table(["fold", "stopped", "best", "best val loss"], rows), ""]
+
+    if findings:
+        out += ["### Findings", ""] + list(findings) + [""]
+    return "\n".join(out)
+
+
+def splits_sha256(path=None):
+    """sha256 of splits.csv with LF line endings, as the notebook records it."""
+    return hashlib.sha256(_normalised_bytes(path or ds.SPLITS_PATH)).hexdigest()
+
+
+def check_default_settings(results):
+    """Problems (a list of strings) with gathering `results` (name ->
+    result) as the results at the default settings: every one must share
+    config B's epoch cap and hyperparameters and have today's row caps,
+    sampling seed, window and splits.csv; main configurations and folds must
+    use the default features, and each ablation its own subset of them."""
+    problems = []
+    base = results["B"]["settings"]
+    expected = {"epoch_cap": base.get("epoch_cap"), "hyperparameters": base.get("hyperparameters"),
+                "row_caps": ds.ROW_CAPS, "sampling_seed": ds.SAMPLING_SEED, "window_seconds": zfe.WINDOW_SECONDS,
+                "splits_sha256": splits_sha256()}
+    for name, result in results.items():
+        settings = result["settings"]
+        for key, value in expected.items():
+            if settings.get(key) != value:
+                problems.append(f"{name}: {key} is {settings.get(key)!r}, expected {value!r}")
+        features = settings.get("feature_columns")
+        if name.startswith("B-"):
+            feature_set = name.removeprefix("B-")
+            if features != zfe.FEATURE_SETS.get(feature_set) or not set(features) <= set(zfe.FEATURE_COLUMNS):
+                problems.append(f"{name}: features are not {feature_set!r}, a subset of the default")
+        elif features != zfe.FEATURE_COLUMNS:
+            problems.append(f"{name}: features are not the default set")
+    return problems
+
+
+def _window_size_grid(result):
+    """group x bucket table of 'rate (rows)' for one configuration."""
+    sizes = result["window_sizes"]
+    buckets = [label for _, _, label in WINDOW_SIZE_BUCKETS]
+    rows = []
+    for group in dict.fromkeys(sizes["group"]):
+        cells = []
+        for bucket in buckets:
+            cell = sizes[(sizes["group"] == group) & (sizes["bucket"] == bucket)]
+            empty = cell.empty or cell["rows"].iloc[0] == 0
+            cells.append("–" if empty else f"{_pct(cell['rate'].iloc[0])} ({int(cell['rows'].iloc[0]):,})")
+        rows.append([_metric_label(group)] + cells)
+    return md_table(["group"] + buckets, rows)
+
+
+def _rows_text(rows):
+    return " / ".join(f"{rows.get(label, 0):,}" for label in ("benign", "tunnel")) if rows else "n/a"
+
+
+def render_default_results(title, configurations, description=(), final=None, findings=(), runs_dir=RUNS_DIR):
+    """Markdown for the results at the default settings, gathered from the
+    runs that trained them.
+
+    configurations: [{"name", "run", "result", "note"?}]. name is how the
+    section refers to it ("B", "A", "B-<feature set>", "lofo-<family>");
+    run and result locate results/runs/<run>/<result>.json. final:
+    {"run", "result"} of the final model's training record. Raises
+    ValueError when a configuration or the final model doesn't have the
+    default settings (check_default_settings), so the section can't mix
+    settings.
+    """
+    sources = {c["name"]: c for c in configurations}
+    results = {c["name"]: load_result(c["run"], c["result"], runs_dir) for c in configurations}
+    record = load_training_record(final["run"], final["result"], runs_dir) if final else None
+    problems = check_default_settings({**results, **({"final": record} if record else {})})
+    if problems:
+        raise ValueError("Not all at the default settings:\n  " + "\n  ".join(problems))
+    b = results["B"]
+    settings = b["settings"]
+    architecture = {k: v for k, v in settings["hyperparameters"].items() if k not in ("epochs", "early_stopping")}
+    model_seed = next((r["settings"]["model_seed"] for r in results.values() if "model_seed" in r["settings"]), 0)
+    out = [f"## {title}", ""] + list(description) + [""]
+
+    out += ["### Default settings", "", md_table(["setting", "value"], [
+        ["feature set", f"`{b['feature_set']}`: {len(zfe.FEATURE_COLUMNS)} features (every feature except "
+                        f"{' and '.join(f'`{c}`' for c in zfe.FEATURE_GROUPS['artefact_suspect'])}), "
+                        f"{len(b['input_columns'])} model inputs after one-hot encoding"],
+        ["epoch cap", f"{settings['epoch_cap']}, with early stopping on the validation loss (patience 5, best weights "
+                      "restored); the learning rate is halved after 2 epochs without improvement, down to 1e-05"],
+        ["hyperparameters", f"`{architecture}`"],
+        ["class weights", "sklearn `balanced`, computed on the training rows"],
+        ["decision rule", "argmax of the softmax output (benign / tunnel)"],
+        ["models per configuration", f"{len(b['per_run'])}, each trained from scratch; tables give the average over "
+                                     "them with min – max in brackets"],
+        ["window", f"{settings['window_seconds']} s per domain aggregate"],
+        ["train/val row caps per (capture, window)", f"`{settings['row_caps']}`"],
+        ["sampling seed · model seed", f"{settings['sampling_seed']} · {model_seed}"],
+        ["splits.csv sha256", f"`{settings['splits_sha256']}`"],
+    ]), "", "Features: " + ", ".join(zfe.FEATURE_COLUMNS) + ".", ""]
+
+    rows = []
+    for name, result in results.items():
+        git = result.get("git") or {}
+        rows.append([f"`{name}`", f"`{sources[name]['run']}/{sources[name]['result']}`",
+                     (result.get("trained_at") or "")[:10],
+                     f"`{(git.get('commit') or '')[:7]}`" + (" (uncommitted changes)" if git.get("dirty") else ""),
+                     ", ".join(map(str, result.get("epochs") or [])), sources[name].get("note", "")])
+    out += ["### Where each result comes from", "",
+            md_table(["configuration", "result file (results/runs/…)", "trained", "commit", "epochs trained", "note"],
+                     rows), ""]
+
+    mains = [(f"config {n}", results[n]) for n in MAIN_CONFIGS if n in results]
+    out += ["### Configs B and A", "",
+            "Config B (primary) has wildcard hard negatives in training and validation; config A (stress test) has "
+            "none, and holds out all 13 wildcard captures instead of 00007–00012. The 00007–00012 row compares the two "
+            "on the same captures. Rates are the share of rows classified as tunnel: false positive rates for benign "
+            "rows, recall for tunnel rows.", ""]
+    rows = _metric_rows(mains, MAIN_METRICS)
+    rows.append(["Collapsed runs (one class on the whole test set)"] + [_collapsed(r) for _, r in mains])
+    rows.append(["Training rows (benign / tunnel)"] + [_rows_text(r.get("train_rows")) for _, r in mains])
+    out += [md_table(["metric"] + [label for label, _ in mains], rows), ""]
+    for role, heading in PER_CAPTURE_TABLES:
+        out += [f"**{heading}**", "", md_table(["capture"] + [label for label, _ in mains],
+                                                _per_capture_rows(mains, role)), ""]
+    out += ["**By window size**: rate by the number of queries in the row's 60 s window (all domains), rows in "
+            "brackets.", ""]
+    for label, result in mains:
+        out += [f"*{label[0].upper()}{label[1:]}*", "", _window_size_grid(result), ""]
+
+    ablations = [n for n in results if n.startswith("B-")]
+    if ablations:
+        metrics = ["test_accuracy", "fpr_normal", "fpr_wildcard", "unseen_tool", "unseen_platform"]
+        rows = []
+        for name in ["B"] + ablations:
+            r = results[name]
+            label = "`all` (the default)" if name == "B" else f"`{name.removeprefix('B-')}`"
+            rows.append([label, f"{len(r['settings']['feature_columns'])} ({len(r['input_columns'])})"]
+                        + [_spread(r["summary"], m) for m in metrics])
+        out += ["### Feature-set ablations (config B)", "",
+                "Same rows, splits and training; only the model inputs change. Every set is a subset of the default.",
+                "", md_table(["feature set", "features (inputs)"] + [_metric_label(m) for m in metrics], rows), ""]
+        out += [f"- `{name.removeprefix('B-')}`: {', '.join(results[name]['settings']['feature_columns'])}"
+                for name in ablations] + [""]
+
+    folds = [n for n in results if n.startswith("lofo-")]
+    if folds:
+        rows = [[fold.removeprefix("lofo-"), f"{results[fold].get('family_rows', 0):,}"]
+                + [_spread(results[fold]["summary"], m) for m in ("held_out_family", "fpr_normal", "fpr_wildcard")]
+                + [_collapsed(results[fold])] for fold in folds]
+        total = sum(results[f].get("family_rows") or 0 for f in folds)
+        rows.append(["**all five (row-weighted)**", f"{total:,}", f"**{_pct(_row_weighted(results, folds))}**",
+                     "", "", ""])
+        out += ["### Leave-one-tunnel-family-out cross-validation", "",
+                "Config B's benign data; each fold trains on four tunnel families and is scored on every row of the "
+                "fifth family's captures and on the held-out normal and wildcard captures.", "",
+                md_table(["held-out family", "rows", "recall", "FPR held-out normal", "FPR held-out wildcard",
+                          "collapsed"], rows), ""]
+        rows = [[fold.removeprefix("lofo-"), metric.split("/", 1)[1], _spread(results[fold]["summary"], metric)]
+                for fold in folds for metric in sorted(results[fold]["summary"].index)
+                if metric.startswith("held_out_family/")]
+        out += [md_table(["family", "capture", "recall"], rows), ""]
+
+    if record:
+        by_category = record.get("train_rows_by_category") or {}
+        captures = record.get("captures_by_category") or {}
+        rows = [[category, f"{captures.get(category, 0)}", f"{count:,}"] for category, count in by_category.items()]
+        rows.append(["**total**", f"**{sum(captures.values())}**", f"**{sum(by_category.values()):,}**"])
+        git = record.get("git") or {}
+        n_models = len(record.get("epochs") or [])
+        model_files = "`model_1.keras`" + (f" … `model_{n_models}.keras`" if n_models > 1 else "")
+        out += ["### Final model (not for evaluation)", "",
+                "Trained on every GraphTunnel capture, including the unseen tools (unknownTunnel) and the unseen "
+                "platform (crossEndPoint), so no GraphTunnel data is left that it hasn't been trained on, and it has "
+                "no results here. It is the model for scoring new traffic; config B above is its evaluated "
+                "counterpart.", "",
+                f"- Saved to `{record.get('models_dir')}`: {model_files}, `scaler.joblib`, `label_encoder.joblib`, "
+                "`features.json` (`\"not_for_evaluation\": true`) and `NOT_FOR_EVALUATION.txt`. The scoring "
+                "functions in `zeek_experiments` refuse to score it.",
+                f"- Trained {(record.get('trained_at') or '')[:10]} at commit `{(git.get('commit') or '')[:7]}`"
+                + (" (uncommitted changes)" if git.get("dirty") else "") + " with the settings above; epochs "
+                f"trained: {', '.join(map(str, record.get('epochs') or []))}.",
+                f"- Training rows: every capture, capped per window like the other configurations "
+                f"(benign / tunnel {_rows_text(record.get('train_rows'))}). Early stopping and the learning-rate "
+                f"schedule monitor config B's validation rows ({_rows_text(record.get('val_rows'))}), which are "
+                "training rows here too.", "",
+                md_table(["category", "captures", "training rows"], rows), ""]
+
+    if findings:
+        out += ["### Findings", ""] + list(findings) + [""]
+    return "\n".join(out)
+
+
+def write_run_report(run_name, report_path=REPORT_PATH, runs_dir=RUNS_DIR):
+    """Write a run's section of results/zeek_run.md using the report settings
+    in results/runs/<run>/run.json: layout "single" (default; title,
+    description, reference run and labels), "lofo_comparison" (see
+    render_lofo_comparison) or "defaults" (render_default_results; written
+    near the top of the file, as section spec["section"])."""
+    spec = json.loads((Path(runs_dir) / run_name / RUN_METADATA).read_text(encoding="utf-8"))
+    layout = spec.pop("layout", "single")
+    report_path = Path(report_path)
+    if layout == "single":
+        return write_run_section(run_name, report_path=report_path, runs_dir=runs_dir, **spec)
+    if layout == "lofo_comparison":
+        return upsert_section(report_path, run_name, render_lofo_comparison(run_name, runs_dir=runs_dir, **spec))
+    if layout == "defaults":
+        section = spec.pop("section", run_name)
+        return upsert_section(report_path, section, render_default_results(runs_dir=runs_dir, **spec), at_top=True)
+    raise ValueError(f"Unknown report layout {layout!r} in {run_name}/{RUN_METADATA}")
