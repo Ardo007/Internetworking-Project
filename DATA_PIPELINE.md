@@ -83,8 +83,7 @@ names cause an error rather than a guessed label. Original PCAPs and existing
 Zeek logs are never modified.
 
 The manifest is the single source of truth for which captures exist and what
-they are labelled. (The placeholder
-`testAndEval/TestingAndEval/capture_manifest.csv` is unrelated and unused.)
+they are labelled.
 
 ## 3. Out-of-order PCAPs are time-sorted before Zeek
 
@@ -175,8 +174,7 @@ chunk folders into capture sessions.
 
 ## 5. Splits
 
-`notebooks/dataset_splits.py` is the project's only split rule (the old
-row-level `testAndEval/TestingAndEval/split_dataset.py` was removed). Run it
+`notebooks/dataset_splits.py` is the project's only split rule. Run it
 after the Zeek logs are in place:
 
 ```text
