@@ -23,8 +23,7 @@ python -m pip install -r notebooks/requirements.txt
 ```
 
 Open the notebook in VS Code or Jupyter and select the `.venv` interpreter
-(Python 3.13) as the kernel. Run the tests from the repo root with
-`.\.venv\Scripts\python.exe -m pytest`.
+(Python 3.13) as the kernel.
 
 VS Code's Pylance may underline `tensorflow.keras` imports. That is an editor
 warning only; the imports resolve to Keras 3 at runtime.
