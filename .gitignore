@@ -21,3 +21,8 @@ notebooks/dataset_zeek/
 # executed notebook copies. results/zeek_run.md is committed.
 /models/
 /results/executed/
+
+# Tests, kept locally only.
+/tests/
+/pytest.ini
+/.pytest_cache/
