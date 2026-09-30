@@ -82,10 +82,11 @@ Every training run has a name. For each configuration it trained there is:
 - `models/zeek_bilstm/<run>/<name>/` with `model_1.keras` … `model_5.keras`,
   `scaler.joblib`, `label_encoder.joblib` and `features.json` (feature order,
   one-hot input columns, window length, row caps, sampling seed, training date,
-  git commit and library versions). Gitignored: regenerate by re-running the
-  run's configurations (notebook or `run_experiments.py` with the same
-  `--run`, `--epochs` and `--feature-set`). Load one with
-  `model_artifacts.load_artifacts(...)`.
+  git commit and library versions). Gitignored, except the final model
+  (`run4_default_50ep/final/`), which is committed for live scoring:
+  regenerate the others by re-running the run's configurations (notebook or
+  `run_experiments.py` with the same `--run`, `--epochs` and
+  `--feature-set`). Load one with `model_artifacts.load_artifacts(...)`.
 - `results/runs/<run>/<name>.json`: the metrics and per-epoch loss histories
   (committed). `results/runs/<run>/run.json` holds the run's report settings,
   and `zeek_experiments.write_run_report("<run>")` writes the run's section of

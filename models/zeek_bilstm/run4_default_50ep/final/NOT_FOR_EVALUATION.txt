@@ -1,0 +1,1 @@
+Final model, not for evaluation. It was trained on every GraphTunnel capture, including the unseen tools (unknownTunnel) and the unseen platform (crossEndPoint), so no GraphTunnel data is left that it hasn't been trained on, and scoring it there measures nothing. Use it to score new traffic. Its evaluated counterpart is config B at the same settings (see results/zeek_run.md).
