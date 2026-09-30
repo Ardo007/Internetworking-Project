@@ -18,8 +18,15 @@ notebooks/dataset/
 notebooks/dataset_zeek/
 
 # Trained models (regenerate with the notebook, see notebooks/README.md) and
-# executed notebook copies. results/zeek_run.md is committed.
-/models/
+# executed notebook copies. results/zeek_run.md is committed. The final model
+# is committed too, for live scoring; each level is re-included in turn,
+# because git can't re-include a file inside an ignored folder.
+/models/*
+!/models/zeek_bilstm/
+/models/zeek_bilstm/*
+!/models/zeek_bilstm/run4_default_50ep/
+/models/zeek_bilstm/run4_default_50ep/*
+!/models/zeek_bilstm/run4_default_50ep/final/
 /results/executed/
 
 # Tests, kept locally only.

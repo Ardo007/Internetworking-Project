@@ -17,7 +17,8 @@ download GraphTunnel
                 └─ notebooks/dataset_splits.py      Data/processed/GraphTunnel/splits.csv (committed)
                     └─ notebooks/dns_tunneling_bilstm_model.ipynb
                         ├─ notebooks/dataset_zeek/     cached feature table (gitignored)
-                        ├─ models/zeek_bilstm/<run>/<name>/  models, scaler, features.json (gitignored)
+                        ├─ models/zeek_bilstm/<run>/<name>/  models, scaler, features.json (gitignored,
+                        │                                    except run4_default_50ep/final/)
                         └─ results/zeek_run.md         metrics (committed)
 ```
 
@@ -221,8 +222,10 @@ configuration it trains it writes:
 - `models/zeek_bilstm/<run>/<name>/`: `model_*.keras`, `scaler.joblib`,
   `label_encoder.joblib` and `features.json` (feature order, one-hot input
   columns, window length, row caps, sampling seed, training date, git commit
-  and library versions). Gitignored: regenerate by re-running the run's
-  configurations. Run 1's models are directly under `models/zeek_bilstm/<name>/`.
+  and library versions). Gitignored, except the final model
+  (`run4_default_50ep/final/`), which is committed for live scoring:
+  regenerate the others by re-running the run's configurations. Run 1's
+  models are directly under `models/zeek_bilstm/<name>/`.
 - `results/runs/<run>/<name>.json`: metrics and per-epoch loss histories,
   committed. It is written last, so its presence marks the configuration as
   done.
