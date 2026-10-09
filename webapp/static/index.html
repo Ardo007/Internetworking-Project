@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNS Tunnel Detector</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --text: #1b1f24;
+    --muted: #5f6b7a;
+    --border: #dde1e6;
+    --idle: #6b7785;
+    --idle-bg: #eceff2;
+    --info: #1f5fbf;
+    --info-bg: #e5eefb;
+    --ok: #1d7a3e;
+    --ok-bg: #e3f4e8;
+    --bad: #b42318;
+    --bad-bg: #fde8e6;
+    --warn-bg: #fff4d6;
+    --warn: #7a5300;
+    --btn: #1f5fbf;
+    --btn-text: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418;
+      --panel: #1a1f25;
+      --text: #e6e9ed;
+      --muted: #9aa5b1;
+      --border: #2c333b;
+      --idle: #9aa5b1;
+      --idle-bg: #232a31;
+      --info: #7fb0ff;
+      --info-bg: #17263d;
+      --ok: #5fd08a;
+      --ok-bg: #12291b;
+      --bad: #ff7b6e;
+      --bad-bg: #3a1714;
+      --warn-bg: #3a2e0f;
+      --warn: #f2c35b;
+      --btn: #3d7be0;
+      --btn-text: #ffffff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+  h1 { font-size: 20px; margin: 0; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  select {
+    flex: 1 1 260px; min-width: 0; padding: 8px 10px; font: inherit;
+    color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  }
+  button {
+    padding: 8px 16px; font: inherit; font-weight: 600; border-radius: 8px; cursor: pointer;
+    border: 1px solid transparent; background: var(--btn); color: var(--btn-text);
+  }
+  button.secondary { background: transparent; color: var(--text); border-color: var(--border); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
+  #banner { text-align: center; padding: 36px 16px; border-radius: 10px; margin-top: 16px; border: 2px solid transparent; }
+  #banner .label { font-size: clamp(30px, 7vw, 52px); font-weight: 800; letter-spacing: .02em; }
+  #banner .sub { margin-top: 6px; color: var(--muted); }
+  #banner.idle { background: var(--idle-bg); color: var(--idle); }
+  #banner.info { background: var(--info-bg); color: var(--info); }
+  #banner.ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+  #banner.bad { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+
+  .notice { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+  .notice.error { background: var(--bad-bg); color: var(--bad); }
+  .notice.warning { background: var(--warn-bg); color: var(--warn); }
+
+  h2 { font-size: 14px; margin: 0 0 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.domain { word-break: break-all; }
+  tr.flag td { color: var(--bad); font-weight: 600; }
+  .empty { color: var(--muted); font-size: 14px; }
+
+  #history { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--idle-bg); border: 1px solid var(--border); }
+  .dot.benign { background: var(--ok); border-color: var(--ok); }
+  .dot.no_dns { background: var(--ok-bg); border-color: var(--ok); }
+  .dot.TUNNEL { background: var(--bad); border-color: var(--bad); }
+  .dot.partial { opacity: .55; }
+  .facts { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .facts b { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>DNS Tunnel Detector</h1>
+    <span class="meta" id="model"></span>
+  </header>
+
+  <section class="panel">
+    <div class="controls">
+      <select id="iface" aria-label="Capture interface"><option value="">Loading interfaces…</option></select>
+      <button class="secondary" id="refresh" title="Reload the interface list">Refresh</button>
+      <button id="start" disabled>Start</button>
+      <button class="secondary" id="stop" disabled>Stop</button>
+    </div>
+    <div id="error" class="notice error" hidden></div>
+    <div id="warning" class="notice warning" hidden></div>
+  </section>
+
+  <section id="banner" class="idle" aria-live="polite">
+    <div class="label" id="banner-label">IDLE</div>
+    <div class="sub" id="banner-sub">Choose an interface and press Start.</div>
+  </section>
+
+  <section class="panel">
+    <h2 id="domains-title">Domains this minute</h2>
+    <div class="table-wrap">
+      <table id="domains" hidden>
+        <thead><tr><th>Domain</th><th class="num">Queries</th><th class="num">Tunnel prob.</th><th>Verdict</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="empty" id="domains-empty">No minute scored yet.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Last 30 minutes</h2>
+    <div id="history"></div>
+    <div class="empty" id="history-empty">Each dot is one minute: green benign, red tunnel detected, faded = partial minute.</div>
+    <div class="facts" id="facts"></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let state = null;
+  let clockOffset = 0;  // server clock - browser clock, ms
+
+  const time = (epoch) => new Date(epoch * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const timeSec = (epoch) => new Date(epoch * 1000).toLocaleTimeString();
+  const pct = (p) => (p == null ? "–" : (p * 100).toFixed(p >= 0.995 || p < 0.001 ? 2 : 1) + "%");
+  const serverNow = () => (Date.now() + clockOffset) / 1000;
+  const active = (s) => ["starting", "capturing", "stopping"].includes(s);
+
+  // Every value from the server is set with textContent: domain names come
+  // straight from captured traffic and must never be parsed as HTML.
+  function el(tag, text, className) {
+    const node = document.createElement(tag);
+    if (text != null) node.textContent = text;
+    if (className) node.className = className;
+    return node;
+  }
+
+  async function api(path, options) {
+    const response = await fetch(path, options);
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || `${response.status} ${response.statusText}`);
+    return body;
+  }
+
+  async function loadInterfaces() {
+    const select = $("iface");
+    const previous = select.value || (state && state.interface && state.interface.id) || "";
+    select.replaceChildren(el("option", "Loading interfaces…"));
+    try {
+      const interfaces = await api("/api/interfaces");
+      select.replaceChildren(el("option", interfaces.length ? "Choose an interface…" : "No capture interfaces found"));
+      select.firstChild.value = "";
+      for (const iface of interfaces) {
+        const option = el("option", iface.name);
+        option.value = iface.id;
+        option.title = iface.id;
+        select.append(option);
+      }
+      select.value = interfaces.some((i) => i.id === previous) ? previous : "";
+    } catch (error) {
+      select.replaceChildren(el("option", "Could not list interfaces"));
+      select.firstChild.value = "";
+      showError(error.message);
+    }
+    renderControls();
+  }
+
+  function showError(message) {
+    $("error").textContent = message || "";
+    $("error").hidden = !message;
+  }
+
+  function renderControls() {
+    const status = state ? state.status : "idle";
+    const busy = active(status);
+    $("iface").disabled = busy;
+    $("refresh").disabled = busy;
+    $("start").disabled = busy || !$("iface").value;
+    $("stop").disabled = !(status === "capturing" || status === "starting");
+  }
+
+  function renderBanner() {
+    const banner = $("banner");
+    const latest = state.latest;
+    let cls = "idle", label = "IDLE", sub = "Choose an interface and press Start.";
+
+    if (latest) {
+      const minute = `${time(latest.window_start)}–${time(latest.window_end)}${latest.partial ? " (partial minute)" : ""}`;
+      if (latest.verdict === "TUNNEL") {
+        cls = "bad"; label = "TUNNEL DETECTED";
+        const names = latest.flagged.map((d) => d.domain).join(", ");
+        sub = `${minute} · ${names}`;
+      } else {
+        cls = "ok"; label = "BENIGN";
+        sub = latest.verdict === "no_dns"
+          ? `${minute} · no DNS traffic this minute`
+          : `${minute} · ${latest.n_queries} queries, ${latest.n_domains} domains, max ${pct(latest.max_prob)}`;
+      }
+    }
+
+    if (state.status === "starting") {
+      cls = "info"; label = "STARTING"; sub = "Starting capture and Zeek…";
+    } else if (state.status === "capturing") {
+      const eta = state.next_verdict_at ? Math.max(0, Math.round(state.next_verdict_at - serverNow())) : null;
+      const next = eta == null ? "" : eta > 0 ? `next verdict in ~${eta}s` : "scoring…";
+      if (!latest) {
+        cls = "info"; label = "LISTENING";
+        sub = `Capturing on ${state.interface.name} · first verdict at ~${timeSec(state.next_verdict_at)} (${next})`;
+      } else {
+        sub += ` · ${next}`;
+      }
+    } else if (state.status === "stopping") {
+      if (!latest) { cls = "info"; label = "STOPPING"; }
+      sub = (latest ? sub + " · " : "") + "stopping, scoring the last minute…";
+    } else if (latest) {
+      sub += " · capture stopped";
+    }
+
+    banner.className = cls;
+    $("banner-label").textContent = label;
+    $("banner-sub").textContent = sub;
+  }
+
+  function renderDomains() {
+    const latest = state.latest;
+    const table = $("domains"), body = table.querySelector("tbody");
+    body.replaceChildren();
+    if (!latest || !latest.top.length) {
+      table.hidden = true;
+      $("domains-empty").hidden = false;
+      $("domains-empty").textContent = latest ? "No DNS traffic in the last scored minute." : "No minute scored yet.";
+      $("domains-title").textContent = "Domains this minute";
+      return;
+    }
+    // Every flagged domain, then the highest-scoring benign ones.
+    const shown = [...latest.flagged];
+    for (const row of latest.top) if (!shown.some((d) => d.domain === row.domain)) shown.push(row);
+    for (const row of shown) {
+      const flagged = row.prob >= state.threshold;
+      const tr = el("tr", null, flagged ? "flag" : "");
+      tr.append(el("td", row.domain || "(empty)", "domain"), el("td", String(row.n_queries), "num"),
+                el("td", pct(row.prob), "num"), el("td", flagged ? "TUNNEL" : "benign"));
+      body.append(tr);
+    }
+    table.hidden = false;
+    $("domains-empty").hidden = true;
+    $("domains-title").textContent = `Domains ${time(latest.window_start)}–${time(latest.window_end)}` +
+      (latest.n_domains > shown.length ? ` (top ${shown.length} of ${latest.n_domains})` : "");
+  }
+
+  function renderHistory() {
+    const history = $("history");
+    history.replaceChildren();
+    for (const h of state.history) {
+      const dot = el("span", null, `dot ${h.verdict}${h.partial ? " partial" : ""}`);
+      const verdict = h.verdict === "TUNNEL" ? "tunnel detected" : h.verdict === "no_dns" ? "no DNS traffic" : "benign";
+      dot.title = `${time(h.window_start)} · ${verdict}${h.max_prob == null ? "" : " · max " + pct(h.max_prob)}${h.partial ? " · partial" : ""}`;
+      history.append(dot);
+    }
+    $("history-empty").hidden = state.history.length > 0;
+
+    const facts = $("facts");
+    facts.replaceChildren();
+    const fact = (name, value) => { const s = el("span", name + ": "); s.append(el("b", value)); facts.append(s); };
+    if (state.last_tunnel_at) fact("Last tunnel seen", time(state.last_tunnel_at));
+    if (state.interface) fact("Interface", state.interface.name);
+    if (state.run_id) fact("Run", state.run_id);
+    if (state.started_at) fact("Started", timeSec(state.started_at));
+  }
+
+  function render() {
+    if (!state) return;
+    $("model").textContent = `Model ${state.model} · threshold ${state.threshold}`;
+    renderControls();
+    renderBanner();
+    renderDomains();
+    renderHistory();
+    $("warning").textContent = state.warning || "";
+    $("warning").hidden = !state.warning;
+    if (state.status === "error") showError(state.error);
+  }
+
+  async function poll() {
+    try {
+      state = await api("/api/state");
+      clockOffset = state.server_time * 1000 - Date.now();
+      render();
+    } catch (error) {
+      showError("Lost contact with the app: " + error.message);
+    }
+  }
+
+  $("iface").addEventListener("change", renderControls);
+  $("refresh").addEventListener("click", loadInterfaces);
+  $("start").addEventListener("click", async () => {
+    showError("");
+    $("start").disabled = true;
+    try {
+      state = await api("/api/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interface: $("iface").value }),
+      });
+    } catch (error) {
+      showError(error.message);
+    }
+    await poll();
+  });
+  $("stop").addEventListener("click", async () => {
+    $("stop").disabled = true;
+    try { state = await api("/api/stop", { method: "POST" }); } catch (error) { showError(error.message); }
+    await poll();
+  });
+
+  poll().then(loadInterfaces);
+  setInterval(poll, 2000);
+  setInterval(() => state && renderBanner(), 1000);
+})();
+</script>
+</body>
+</html>
