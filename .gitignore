@@ -33,3 +33,4 @@ notebooks/dataset_zeek/
 /tests/
 /pytest.ini
 /.pytest_cache/
+/results/web_scoring_log.csv
