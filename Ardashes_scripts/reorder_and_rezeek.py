@@ -1,36 +1,3 @@
-"""Time-sort out-of-order GraphTunnel PCAPs and re-run Zeek on the sorted copies.
-
-Run once, after process_pcaps.py.
-
-Why: some GraphTunnel captures (all of normal/) are not stored in timestamp
-order; a handful of packets in each file carry timestamps minutes to hours
-later than their neighbours. Zeek keeps its clock at the newest timestamp it
-has seen, so on such a file:
-  * dns.log `ts` is that clock rather than the packet time (tens of
-    thousands of records end up sharing a handful of timestamps), and
-  * connections look idle and are expired immediately, so a query and its
-    response land in different connections and are logged as two records,
-    neither of which has `rtt`.
-Live captures are written in time order, so training on that output would
-teach a model an artefact that never occurs live.
-
-For every capture in the manifest:
-  1. Scan all packets. A capture is out of order if any packet's timestamp
-     is earlier than the packet before it.
-  2. Only for out-of-order captures:
-     a. reordercap writes a time-sorted copy to
-        Data/interim/GraphTunnel/<same relative path>. Data/raw is never
-        modified.
-     b. The existing Zeek folder is renamed to <stem>_Backup.
-     c. Zeek runs on the sorted copy into the original folder, via
-        process_pcaps.run_zeek (same image and flags), so the manifest's
-        zeek_dns_log paths stay valid.
-  3. Writes Data/interim/GraphTunnel/reorder_report.csv.
-
-Re-running is safe: a capture whose _Backup folder already exists and whose
-output folder holds usable logs is skipped.
-"""
-
 import argparse
 import csv
 import shutil
@@ -77,11 +44,6 @@ def open_reader(file):
 
 
 def scan_order(pcap):
-    """Return (packets, backwards_steps, max_lag_seconds) for a capture.
-
-    max_lag is how far a packet's timestamp falls behind the newest timestamp
-    seen before it, which is exactly how far behind Zeek's clock it lands.
-    """
     packets = 0
     backwards = 0
     max_lag = 0.0

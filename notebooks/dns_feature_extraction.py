@@ -1,27 +1,3 @@
-"""
-DNS Tunneling Feature Extraction
-=================================
-Parses DNS traffic out of PCAP / PCAPNG capture files and builds a
-per-query feature table suitable for rule-based, classical-ML and
-deep-learning DNS tunnel detectors.
-
-Handles the mixed capture formats (legacy pcap and pcapng) and mixed
-link layers (Ethernet, Linux "cooked" SLL, raw IP) found in the
-DNS-Tunnel-Datasets repository.
-
-Feature groups produced per DNS query:
-  * lexical      - qname length/entropy/character composition, label
-                    (subdomain) structure -- the classic signals used
-                    to spot encoded payloads riding in DNS labels.
-  * response     - size, TTL, answer count, rcode and latency of the
-                    matching DNS response (when one is observed).
-  * domain/session - aggregated over all queries seen for the same
-                    base domain within a capture: query rate, unique
-                    subdomain count, query-type diversity, etc. This
-                    is what actually distinguishes a tunnel (many
-                    unique high-entropy subdomains, machine-gunned)
-                    from ordinary lookups to the same domain.
-"""
 import math
 import socket
 import struct
@@ -36,10 +12,8 @@ DNS_QTYPES = {
 }
 HEX_CHARS = set("0123456789abcdef")
 
-# -------------------------------------------------------------- helpers --
 
 def shannon_entropy(s):
-    """Character-level Shannon entropy (bits/char) of a string."""
     if not s:
         return 0.0
     counts = Counter(s)
@@ -48,7 +22,6 @@ def shannon_entropy(s):
 
 
 def open_pcap_reader(fh):
-    """Return (reader, datalink) for either a classic pcap or pcapng file."""
     magic = fh.read(4)
     fh.seek(0)
     if magic in (b"\xd4\xc3\xb2\xa1", b"\xa1\xb2\xc3\xd4",
@@ -84,7 +57,7 @@ def _dns_payload(ip):
         return "udp", l4.sport, l4.dport, l4.data
     if isinstance(l4, dpkt.tcp.TCP) and (l4.sport == 53 or l4.dport == 53):
         payload = l4.data
-        if len(payload) > 2:  # DNS-over-TCP has a 2-byte length prefix
+        if len(payload) > 2:
             payload = payload[2:]
         return "tcp", l4.sport, l4.dport, payload
     return None, None, None, None
@@ -97,21 +70,7 @@ def _ip_to_str(raw):
         return None
 
 
-# ---------------------------------------------------------- DNS parsing --
-#
-# NOTE: dpkt.dns.DNS() decodes every label as strict UTF-8 and raises
-# UnicodeDecodeError on anything else. DNS tunneling tools routinely pack
-# raw/near-random bytes into query labels and into NULL/TXT answer data
-# (that's the whole point of a tunnel) -- on this dataset that made dpkt
-# silently drop 46-97% of messages for the iodine-family captures, i.e.
-# exactly the traffic this project cares most about. So DNS messages are
-# parsed by hand below: header fields via struct, and names via raw
-# length-prefixed labels decoded latin-1 (a lossless 1-byte<->1-char
-# mapping) instead of UTF-8, so arbitrary bytes never abort parsing.
-
 def _read_name(payload, offset, max_jumps=20):
-    """Read a (possibly compressed) DNS name starting at `offset`.
-    Returns (name_as_latin1_str, offset_immediately_after_the_name)."""
     labels = []
     return_offset = None
     jumps = 0
@@ -122,7 +81,7 @@ def _read_name(payload, offset, max_jumps=20):
         if length == 0:
             pos += 1
             break
-        if (length & 0xC0) == 0xC0:  # compression pointer
+        if (length & 0xC0) == 0xC0:
             if pos + 1 >= n:
                 break
             ptr = ((length & 0x3F) << 8) | payload[pos + 1]
@@ -141,12 +100,6 @@ def _read_name(payload, offset, max_jumps=20):
 
 
 def parse_dns_message(payload):
-    """
-    Minimal, tolerant DNS message parser. Returns a dict of header fields
-    plus the first question's (qname, qtype) and, for responses, the
-    minimum TTL seen among answer records -- or None if even the 12-byte
-    header doesn't fit.
-    """
     if len(payload) < 12:
         return None
     txid, flags, qdcount, ancount, nscount, arcount = struct.unpack("!HHHHHH", payload[:12])
@@ -163,11 +116,11 @@ def parse_dns_message(payload):
             qname = qname.rstrip(".").lower()
             if offset + 4 <= len(payload):
                 qtype = struct.unpack("!H", payload[offset:offset + 2])[0]
-                offset += 4  # qtype + qclass
+                offset += 4
 
         if qr == 1 and ancount:
             ttls = []
-            for _ in range(min(ancount, 64)):  # cap: tolerate truncated/garbled captures
+            for _ in range(min(ancount, 64)):
                 _, offset = _read_name(payload, offset)
                 if offset + 10 > len(payload):
                     break
@@ -180,7 +133,7 @@ def parse_dns_message(payload):
             if ttls:
                 min_ttl = min(ttls)
     except Exception:
-        pass  # keep whatever header/question fields we already extracted
+        pass
 
     return {
         "txid": txid, "qr": qr, "opcode": opcode, "rcode": rcode,
@@ -189,10 +142,7 @@ def parse_dns_message(payload):
     }
 
 
-# --------------------------------------------------------- pcap parsing --
-
 def iter_dns_messages(pcap_path):
-    """Yield one dict per successfully parsed DNS message (query or response)."""
     with open(pcap_path, "rb") as fh:
         reader, datalink = open_pcap_reader(fh)
         for ts, buf in reader:
@@ -212,7 +162,7 @@ def iter_dns_messages(pcap_path):
                 "src_ip": _ip_to_str(ip.src), "sport": sport,
                 "dst_ip": _ip_to_str(ip.dst), "dport": dport,
                 "txid": dns["txid"],
-                "qr": dns["qr"],            # 0 = query, 1 = response
+                "qr": dns["qr"],
                 "opcode": dns["opcode"],
                 "rcode": dns["rcode"],
                 "qdcount": dns["qdcount"], "ancount": dns["ancount"],
@@ -222,8 +172,6 @@ def iter_dns_messages(pcap_path):
                 "pkt_len": len(buf),
             }
 
-
-# --------------------------------------------------------- lexical feats --
 
 def _lexical_features(qname):
     if not qname:
@@ -256,14 +204,7 @@ def _base_domain(qname, keep_labels=2):
     return ".".join(labels[-keep_labels:]) if len(labels) >= keep_labels else qname
 
 
-# ------------------------------------------------------ per-file dataset --
-
 def extract_query_records(pcap_path, label=None):
-    """
-    Parse one capture file into a per-query DataFrame: one row per DNS
-    question, enriched with lexical features and (when found) the
-    matching response's size / TTL / rcode / latency.
-    """
     messages = list(iter_dns_messages(pcap_path))
     if not messages:
         return pd.DataFrame()
@@ -302,10 +243,7 @@ def extract_query_records(pcap_path, label=None):
     return queries.drop(columns=["match_key"])
 
 
-# ---------------------------------------------------- domain aggregates --
-
 def add_domain_aggregates(df, group_cols=("pcap_file", "base_domain")):
-    """Add per-(file, base_domain) session/window features back onto every row."""
     group_cols = list(group_cols)
     agg = df.groupby(group_cols).agg(
         domain_query_count=("qname", "count"),
@@ -320,10 +258,6 @@ def add_domain_aggregates(df, group_cols=("pcap_file", "base_domain")):
         domain_last_ts=("ts", "max"),
     ).reset_index()
 
-    # Floor the window at 1 second so a domain seen only once or twice in a
-    # fraction of a second doesn't produce an absurd instantaneous "rate"
-    # (a handful of samples divided by a near-zero duration would otherwise
-    # dwarf every genuinely bursty tunnel domain).
     agg["domain_duration"] = (agg["domain_last_ts"] - agg["domain_first_ts"]).clip(lower=1.0)
     agg["domain_query_rate"] = agg["domain_query_count"] / agg["domain_duration"]
     agg["domain_unique_subdomain_ratio"] = agg["domain_unique_qnames"] / agg["domain_query_count"]
@@ -332,11 +266,6 @@ def add_domain_aggregates(df, group_cols=("pcap_file", "base_domain")):
     return df.merge(agg, on=group_cols, how="left")
 
 
-# ------------------------------------------------------------ ML frame --
-
-#: columns handed to the downstream classical-ML / deep-learning models.
-#: (identifiers like ip/port/qname/txid are deliberately excluded so the
-#: model can't just memorize a host or domain string.)
 FEATURE_COLUMNS = [
     "proto", "qtype_name",
     "qname_len", "label_count", "max_label_len", "avg_label_len", "first_label_len",
@@ -350,12 +279,6 @@ FEATURE_COLUMNS = [
 
 
 def to_ml_frame(df, label_col="Label", extra_cols=()):
-    """
-    Select modeling columns and fill the response-side NaNs that occur
-    when a query's matching response wasn't captured. `extra_cols` lets
-    you keep bookkeeping columns (e.g. 'pcap_file', 'source_group') for
-    analysis without feeding them to the model.
-    """
     cols = FEATURE_COLUMNS + list(extra_cols) + [label_col]
     out = df[cols].copy()
     out["response_size"] = out["response_size"].fillna(0)
@@ -367,10 +290,6 @@ def to_ml_frame(df, label_col="Label", extra_cols=()):
 
 
 def build_dataset(file_label_pairs, verbose=True):
-    """
-    file_label_pairs: iterable of (pcap_path, label) tuples.
-    Returns one combined, feature-enriched DataFrame (one row per DNS query).
-    """
     frames = []
     for path, label in file_label_pairs:
         if verbose:

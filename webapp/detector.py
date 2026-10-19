@@ -1,19 +1,3 @@
-"""The live detector behind the web app: runs dumpcap, feeds each sealed
-chunk through Zeek and scores every calendar minute as soon as all of its
-traffic has been processed.
-
-One run = one Start..Stop. Each run gets its own folder,
-datas/web/<run_id>/{captures,zeek}, outside datas/zeek, so web sessions
-are never picked up as own_benign training data and chunks from an earlier
-run can't be mixed into a new one.
-
-Minute scheduling: dumpcap rotates on the clock (:00 and :30), so the chunk
-being written marks how far processing has got -- every chunk before it is
-sealed and has been through Zeek. Minute M is scored once that point
-(the "horizon") reaches M+60. The chunk before the minute is loaded too,
-so a query/response pair split across the minute boundary is re-joined.
-"""
-
 import math
 import threading
 import time
@@ -27,10 +11,7 @@ RUNS_DIR = zr.PROJECT_ROOT / "datas" / "web"
 POLL_SECONDS = 2
 HISTORY_LENGTH = 30
 TOP_DOMAINS = 5
-#: Rough Zeek + scoring time after a minute ends, for the "next verdict" countdown.
 PROCESSING_ALLOWANCE_SECONDS = 5
-#: The first/last minute of a run is only scored if at least this much of
-#: it was captured -- a few seconds of traffic is too little for a verdict.
 MIN_PARTIAL_SECONDS = 30
 
 ACTIVE_STATUSES = ("starting", "capturing", "stopping")
@@ -41,8 +22,6 @@ class AlreadyRunning(RuntimeError):
 
 
 class Run:
-    """Everything belonging to one Start..Stop."""
-
     def __init__(self, run_id, interface, process, started):
         self.run_id = run_id
         self.interface = interface
@@ -55,8 +34,8 @@ class Run:
         if self.first_window + 60 - started < MIN_PARTIAL_SECONDS:
             self.first_window += 60
         self.next_window = self.first_window
-        self.chunks = []  # [(start epoch, dns.log path or None)], in capture order
-        self.processed = set()  # chunk file names
+        self.chunks = []
+        self.processed = set()
         self.stop_requested = threading.Event()
         self.thread = None
 
@@ -68,8 +47,6 @@ class Run:
         return text.strip()[-chars:]
 
     def dns_logs_for(self, minute_start):
-        """dns.logs of the chunks overlapping [minute_start - 30, minute_start + 60):
-        the minute itself plus the chunk before it."""
         low, high = minute_start - capture.CHUNK_SECONDS, minute_start + 60
         logs = []
         for i, (start, dns_log) in enumerate(self.chunks):
@@ -89,8 +66,6 @@ class Detector:
         self._run = None
         self._container_ready = False
         self._state = self._idle_state()
-
-    # ------------------------------------------------------------ state --
 
     @staticmethod
     def _idle_state():
@@ -119,8 +94,6 @@ class Detector:
         state["threshold"] = self.threshold
         state["model"] = self.model_label
         return state
-
-    # ---------------------------------------------------------- control --
 
     def start(self, interface_id):
         with self._lock:
@@ -161,8 +134,6 @@ class Detector:
         run.thread.start()
 
     def stop(self):
-        """Ask the current run to stop. Returns at once; the worker stops
-        dumpcap, scores the last (partial) minute and goes back to idle."""
         with self._lock:
             run = self._run
             if run is None or self._state["status"] not in ("starting", "capturing"):
@@ -171,7 +142,6 @@ class Detector:
         run.stop_requested.set()
 
     def shutdown(self, timeout=60):
-        """Stop any run and remove the Zeek container (app exit)."""
         run = self._run
         if run is not None:
             run.stop_requested.set()
@@ -184,8 +154,6 @@ class Detector:
             self._container_ready = False
         if self.log is not None:
             self.log.close()
-
-    # ----------------------------------------------------------- worker --
 
     def _worker(self, run):
         try:
@@ -202,7 +170,7 @@ class Detector:
             self._process_chunks(run, all_sealed=True)
             self._score_ready(run, horizon=stopped, final=True)
             self._set(status="idle", next_verdict_at=None)
-        except Exception as error:  # surface anything to the page instead of dying silently
+        except Exception as error:
             if run.process.poll() is None:
                 capture.stop_capture(run.process)
             self._set(status="error", error=str(error), next_verdict_at=None)
@@ -214,7 +182,6 @@ class Detector:
             try:
                 dns_log = zr.process_capture(chunk, run.zeek_dir / chunk.stem)
             except (OSError, RuntimeError) as error:
-                # Skip the chunk rather than stall every later minute on it.
                 dns_log = None
                 self._set(warning=str(error))
             run.processed.add(chunk.name)
@@ -222,8 +189,6 @@ class Detector:
 
     @staticmethod
     def _horizon(run):
-        """Start of the oldest chunk not yet through Zeek (normally the one
-        dumpcap is writing): all traffic before it has been processed."""
         pending = [
             zr.chunk_start(chunk)
             for chunk in zr.discover_sealed_captures(run.captures_dir, all_sealed=True)
@@ -232,8 +197,6 @@ class Detector:
         return min(pending) if pending else run.started
 
     def _score_ready(self, run, horizon, final=False):
-        """Score every minute that ends by `horizon`. With final=True
-        (dumpcap has stopped), also score the minute `horizon` falls in."""
         while True:
             minute = run.next_window
             end = minute + 60

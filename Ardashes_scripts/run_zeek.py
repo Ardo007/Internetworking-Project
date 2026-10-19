@@ -1,20 +1,3 @@
-"""Feed capture chunks from datas/captures through a long-lived Zeek container.
-
-Designed to run alongside capture_live.py: dumpcap keeps rotating chunks
-into datas/captures while this script watches that folder and processes
-each chunk as it becomes safe to read.
-
-Sealing rule: a ring-buffer chunk is only read once dumpcap has moved on to
-the next one in its sequence (chunk N is processed once chunk N+1 exists).
-Reading a chunk dumpcap still has open would race its writes. Files that
-don't match dumpcap's ring-buffer naming (e.g. a capture dropped in by
-hand) are treated as already complete.
-
-A single Zeek container is started once and reused via `docker exec` for
-every chunk, instead of paying the 1-3s `docker run` startup cost on every
-rotation.
-"""
-
 import argparse
 import re
 import shutil
@@ -32,7 +15,6 @@ CONTAINER_NAME = "dns-tunnel-live-zeek"
 SUPPORTED_SUFFIXES = {".pcap", ".pcapng"}
 DEFAULT_POLL_INTERVAL_SECONDS = 5
 
-# dumpcap ring-buffer naming: <prefix>_<00001>_<YYYYmmddHHMMSS>.<ext>
 RING_BUFFER_PATTERN = re.compile(
     r"^(?P<prefix>.+)_(?P<index>\d{5})_(?P<timestamp>\d{14})$"
 )
@@ -100,12 +82,6 @@ def usable_output(output_directory):
 
 
 def discover_sealed_captures(capture_directory=CAPTURE_DIRECTORY):
-    """Return capture files that are safe to read, oldest first.
-
-    A file matching dumpcap's ring-buffer naming is sealed once the next
-    index in its sequence exists. Files with any other name are treated as
-    already complete (manual drop-ins, single imported pcaps, etc).
-    """
     if not capture_directory.is_dir():
         return []
 

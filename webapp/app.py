@@ -1,14 +1,3 @@
-"""
-Local web app for live DNS tunnel detection.
-
-Pick a capture interface, press Start, and the page shows BENIGN or TUNNEL
-DETECTED for every minute of traffic until you press Stop. Runs on this
-machine only (127.0.0.1); Docker Desktop must be running for Zeek.
-
-Usage:
-  python webapp\\app.py [--model-dir DIR] [--threshold T] [--port N]
-                        [--log-file CSV | --no-log] [--no-browser]
-"""
 import argparse
 import os
 import signal
@@ -19,11 +8,11 @@ from pathlib import Path
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 
-from flask import Flask, jsonify, request, send_from_directory  # noqa: E402
+from flask import Flask, jsonify, request, send_from_directory
 
-import capture  # noqa: E402
-import scoring  # noqa: E402
-from detector import AlreadyRunning, Detector  # noqa: E402
+import capture
+import scoring
+from detector import AlreadyRunning, Detector
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -97,7 +86,7 @@ def main():
     print(f"[webapp] open {url} (Ctrl+C to quit)", flush=True)
     if not args.no_browser:
         threading.Timer(1.5, webbrowser.open, args=(url,)).start()
-    if hasattr(signal, "SIGBREAK"):  # Windows: Ctrl+Break shuts down cleanly too, like Ctrl+C
+    if hasattr(signal, "SIGBREAK"):
         signal.signal(signal.SIGBREAK, signal.default_int_handler)
     try:
         app.run(host="127.0.0.1", port=args.port, threaded=True, use_reloader=False)

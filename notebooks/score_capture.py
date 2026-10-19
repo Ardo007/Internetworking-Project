@@ -1,19 +1,3 @@
-"""
-Score a Zeek dns.log against a trained DNS-tunnelling model.
-
-Usage:
-  python notebooks\score_capture.py <dns.log-path-or-zeek-output-folder> [--model-dir DIR] [--capture-id NAME]
-
-Feeds one capture's dns.log through the same feature pipeline used for
-training (zeek_feature_extraction) and the saved model's exact scaler and
-one-hot columns (model_artifacts), then prints a per-(window, domain)
-verdict: mean tunnel-probability and vote count across the model's 5 folds.
-
-No label is needed -- that's the point of scoring. category/tool/label
-passed to extract_query_records_from_zeek are just bookkeeping; the model
-never sees them (model_artifacts.prepare_model_input drops the label and
-ignores category/tool).
-"""
 import argparse
 import sys
 from pathlib import Path
@@ -59,10 +43,6 @@ def score(dns_log_path, model_dir, capture_id=None, threshold=0.5):
     if frame.empty:
         print("No usable DNS records in this capture (all malformed / unmatched?).")
         return None
-    # mDNS/DNS-SD (RFC 6762 ".local", multicast port 5353) never leaves the
-    # local link, so it can't carry a tunnel payload and isn't represented
-    # in GraphTunnel's training captures -- drop it rather than let it land
-    # near the decision boundary undefended.
     frame = frame[~frame["qname"].str.casefold().str.endswith(".local")]
     if frame.empty:
         print("No usable DNS records in this capture (only mDNS/.local traffic).")
