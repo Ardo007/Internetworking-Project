@@ -158,10 +158,15 @@ traffic; chunk/window backlog shouldn't build up under normal load.
   `notebooks\score_capture.py <path-to-dns.log-or-folder> --model-dir <dir>`.
 - **Formal EER / F1 metrics**, pooling live/external results with
   GraphTunnel's own held-out data: `notebooks\compute_formal_metrics.py`.
-  Note it reports two separate numbers -- an EXTERNAL one (valid, model
-  never trained on that data) and a GRAPHTUNNEL SELF-CHECK one (not valid as
-  a generalisation measure if your model folder is a "final" model trained
-  on every GraphTunnel capture -- see that script's docstring).
+  Note it reports two separate numbers -- an EXTERNAL one (valid: the model
+  never trained on that data -- the Tu et al. (2023) multi-tool capture and
+  the malware-traffic-analysis.net dnscat2 capture) and a GRAPHTUNNEL
+  SELF-CHECK one, scored on config B's test and held-out rows. The self-check
+  is not valid as a generalisation measure if your model folder is a "final"
+  model trained on every GraphTunnel capture, since those rows were then
+  training data; it is only a sanity check that should come out close to
+  perfect. Per-row probabilities are written to `results/` as CSVs, so
+  metrics can be recomputed without rerunning the model.
 - **Feed today's session back into training data.** Live sessions land under
   category `own_benign` automatically the next time `notebooks\dataset_splits.py`
   is run (it scans the live Zeek output folder for new sessions). This

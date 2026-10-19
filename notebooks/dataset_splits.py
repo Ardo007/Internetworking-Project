@@ -1,43 +1,3 @@
-"""
-Dataset splits for the Zeek DNS tunnelling model
-================================================
-The project's single split rule. `python notebooks/dataset_splits.py`
-builds the feature table, writes Data/processed/GraphTunnel/splits.csv and
-prints row and window counts per class, split and configuration.
-
-Splits never cut through a window: every row of splits.csv assigns either a
-whole capture or one contiguous range of WINDOW_SECONDS windows of a capture
-to one split (train / val / test / heldout) in one configuration.
-
-Rules (both configurations unless stated):
-  normal         contiguous blocks by file index: 00000-00047 train,
-                 00048-00054 val, 00055-00061 test, 00062-00067 held out
-                 (false positive rate).
-  tunnel         each capture along its own timeline: first ~70% of its
-                 windows train, next ~15% val, last ~15% test, with a
-                 one-window gap between segments, so every tool is in every
-                 split.
-  wildcard       config A (stress test): all 13 held out.
-                 config B (primary, hard negatives): of 00000-00006, the
-                 capture with the most windows is val and the other six
-                 train; 00007-00012 held out.
-  unknownTunnel  held out (unseen tools); never used for fitting or
-  crossEndPoint  model selection. crossEndPoint is iodine on Android, so it
-                 is reported as an unseen platform, not an unseen tool.
-  own_benign     live-pipeline sessions (see zeek_feature_extraction).
-                 The most recent complete session is held out (false
-                 positive rate); the others, in time order, are split into
-                 contiguous 70/15/15 time blocks with one-window gaps.
-
-Sampling. Train and val rows are capped per (capture, window) so busy
-windows don't dominate fitting: ROW_CAPS rows per window (wildcard gets a
-higher cap so config B keeps enough hard negatives), chosen with a fixed
-SAMPLING_SEED. Each capture's random draw depends only on the seed, the
-capture_id and its rows, so every run and feature set sees the same rows.
-Domain aggregates are computed on all rows before sampling, and test and
-held-out rows are never sampled. The remaining class imbalance is handled
-by the class weights in Build_model (sklearn "balanced").
-"""
 import math
 import re
 import sys
@@ -64,17 +24,13 @@ WILDCARD_BLOCKS = {
     "A": [("heldout", 0, 12)],
     "B": [("train", 0, 6), ("heldout", 7, 12)],
 }
-#: Config B: the wildcard capture in this index range with the most windows
-#: (lowest index on a tie) is moved from train to val.
 WILDCARD_B_VAL_CANDIDATES = (0, 6)
 TIME_FRACTIONS = {"train": 0.70, "val": 0.15, "test": 0.15}
 
-#: Maximum train/val rows per (capture, window), by category.
 ROW_CAPS = {"default": 200, "wildcard": 1000}
 SAMPLING_SEED = 0
 SAMPLED_SPLITS = ("train", "val")
 GAP_WINDOWS = 1
-#: Categories split along their timeline instead of by whole capture.
 TIME_SPLIT_CATEGORIES = ("tunnel", zfe.OWN_BENIGN)
 
 ROLES = {
@@ -90,7 +46,6 @@ HELDOUT_ROLES = {
     "crossEndPoint": "unseen_platform",
 }
 
-#: Tunnel tool families, for leave-one-family-out cross-validation.
 TUNNEL_FAMILIES = ("DNS-shell", "dnscat2", "dnspot", "iodine", "tuns")
 
 COLUMNS = [
@@ -103,7 +58,6 @@ _INDEX = re.compile(r"_(\d{5})_\d{14}$")
 
 
 def capture_index(capture_id):
-    """File index of a chunked capture (normal_00012_... -> 12)."""
     match = _INDEX.search(capture_id)
     if not match:
         raise ValueError(f"No _<index>_<timestamp> suffix in capture_id: {capture_id}")
@@ -122,8 +76,6 @@ def tool_family(category, tool):
 
 
 def capture_table(df):
-    """One row per capture of a feature frame: category, tool, label, time
-    span and number of windows."""
     g = df.groupby("capture_id", sort=True)
     table = pd.DataFrame({
         "category": g["category"].first().astype(str),
@@ -138,11 +90,6 @@ def capture_table(df):
 
 
 def timeline_segments(lengths, fractions=TIME_FRACTIONS, gap=GAP_WINDOWS):
-    """Cut consecutive captures (window counts `lengths`, in time order) into
-    contiguous train/val/test blocks with `gap` unused windows between them.
-
-    Returns (capture position, split, first_window, last_window) tuples.
-    """
     total = sum(lengths)
     available = total - 2 * gap
     if available < 3:
@@ -177,7 +124,6 @@ def _blocks_by_index(capture_id, blocks):
 
 
 def wildcard_validation_capture(captures):
-    """capture_id of config B's wildcard validation capture (None without wildcard)."""
     low, high = WILDCARD_B_VAL_CANDIDATES
     wildcard = captures[captures["category"] == "wildcard"].copy()
     if wildcard.empty:
@@ -188,7 +134,6 @@ def wildcard_validation_capture(captures):
 
 
 def make_splits(captures, window_seconds=zfe.WINDOW_SECONDS):
-    """Build the splits table from capture_table() output."""
     rows = []
 
     def add(config, capture, split, rule, first=None, last=None):
@@ -256,14 +201,6 @@ def make_splits(captures, window_seconds=zfe.WINDOW_SECONDS):
 
 
 def validate_splits(splits):
-    """Raise ValueError if the splits table breaks a split rule.
-
-    Checks that no capture window is in more than one split within a
-    configuration (a capture appears in several splits only as disjoint
-    time segments of a time-split category, separated by GAP_WINDOWS),
-    that evaluation-only categories are only held out, and that config A
-    never trains or selects on wildcard.
-    """
     missing = set(COLUMNS) - set(splits.columns)
     if missing:
         raise ValueError(f"splits table is missing columns: {sorted(missing)}")
@@ -323,13 +260,6 @@ def read_splits(path=SPLITS_PATH):
 
 
 def assign_splits(df, splits, config, window_seconds=zfe.WINDOW_SECONDS):
-    """split and role of every row of a feature frame under `config`.
-
-    Returns a DataFrame aligned to df.index with columns split and role;
-    both are missing for rows in the gap windows between time segments.
-    Raises if the frame has captures the splits table doesn't know, or if
-    the table was built for a different window length.
-    """
     rows = splits[splits["config"] == config]
     if rows.empty:
         raise ValueError(f"No splits for config {config!r}")
@@ -358,12 +288,6 @@ def assign_splits(df, splits, config, window_seconds=zfe.WINDOW_SECONDS):
 
 
 def sampling_keys(df, seed=SAMPLING_SEED):
-    """A reproducible random number per row.
-
-    Each capture's rows are ordered by ts and get numbers from a generator
-    seeded with (seed, crc32(capture_id)), so a row's number doesn't depend
-    on which other captures are in the frame.
-    """
     keys = pd.Series(np.nan, index=df.index)
     for capture_id, index in df.groupby("capture_id", sort=False).groups.items():
         ordered = df.loc[index, "ts"].sort_values(kind="stable").index
@@ -377,32 +301,20 @@ def row_caps_for(categories, caps=ROW_CAPS):
 
 
 def cap_mask(df, caps=ROW_CAPS, seed=SAMPLING_SEED):
-    """True for the at most caps[category] (else caps["default"]) randomly
-    chosen rows of each (capture, window). `df` must hold whole windows."""
     keys = sampling_keys(df, seed)
     rank = keys.groupby([df["capture_id"], df["window_id"]]).rank(method="first")
     return rank <= row_caps_for(df["category"], caps)
 
 
 def cap_rows_per_window(df, caps=ROW_CAPS, seed=SAMPLING_SEED):
-    """The rows of `df` kept by cap_mask."""
     return df[cap_mask(df, caps, seed)]
 
 
 def fit_sample_mask(df, assignment, caps=ROW_CAPS, seed=SAMPLING_SEED):
-    """True for the train/val rows kept by cap_mask.
-
-    Test and held-out rows are never sampled (they are scored in full), and
-    gap-window rows belong to no split, so both are False here.
-    """
     return assignment["split"].isin(SAMPLED_SPLITS).fillna(False).astype(bool) & cap_mask(df, caps, seed)
 
 
 def split_counts(df, assignment, sample=None):
-    """Rows and windows per split, role, class and category.
-
-    With `sample` (a fit_sample_mask), also the train/val rows it keeps.
-    """
     frame = pd.DataFrame({
         "split": assignment["split"], "role": assignment["role"], "Label": df["Label"].astype(str),
         "category": df["category"].astype(str), "capture_id": df["capture_id"], "window_id": df["window_id"],

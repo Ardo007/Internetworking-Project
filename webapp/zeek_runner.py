@@ -1,11 +1,3 @@
-"""Zeek for the web app (web version of Ardashes_scripts/run_zeek.py).
-
-Same approach as the CLI script: one long-lived zeek/zeek:lts container
-with the project folder mounted at /work, and one `docker exec zeek -r`
-per capture chunk. It uses its own container name, so starting or stopping
-the web app never removes a container the CLI pipeline is using.
-"""
-
 import re
 import shutil
 import subprocess
@@ -18,7 +10,6 @@ ZEEK_IMAGE = "zeek/zeek:lts"
 CONTAINER_NAME = "dns-tunnel-web-zeek"
 SUPPORTED_SUFFIXES = {".pcap", ".pcapng"}
 
-# dumpcap ring-buffer naming: <prefix>_<00001>_<YYYYmmddHHMMSS>.<ext>
 RING_BUFFER_PATTERN = re.compile(
     r"^(?P<prefix>.+)_(?P<index>\d{5})_(?P<timestamp>\d{14})$"
 )
@@ -87,8 +78,6 @@ def stop_container():
 
 
 def chunk_start(path):
-    """Epoch seconds a dumpcap chunk started at, from its file name
-    (local time, as dumpcap writes it), or None for other names."""
     match = RING_BUFFER_PATTERN.match(Path(path).stem)
     if not match:
         return None
@@ -96,11 +85,6 @@ def chunk_start(path):
 
 
 def discover_sealed_captures(capture_directory, all_sealed=False):
-    """Return capture chunks that are safe to read, oldest first.
-
-    While dumpcap is running, chunk N is sealed once chunk N+1 exists.
-    all_sealed=True (dumpcap has exited) returns every chunk.
-    """
     if not capture_directory.is_dir():
         return []
 
@@ -118,7 +102,6 @@ def discover_sealed_captures(capture_directory, all_sealed=False):
 
 
 def newest_chunk(capture_directory):
-    """The chunk dumpcap is currently writing (highest index), or None."""
     chunks = discover_sealed_captures(capture_directory, all_sealed=True)
     return chunks[-1] if chunks else None
 

@@ -1,19 +1,3 @@
-"""Continuously capture live traffic to disk using dumpcap's ring buffer.
-
-Chunk rotation is kept short (default 30s) so files become available for
-downstream processing quickly. The statistical analysis window that later
-consumes these chunks is a separate concern and spans many of them -- this
-script only produces the raw chunks. dumpcap performs rotation, filenames,
-and disk-capping itself, so no timing loop is needed here and there is no
-packet loss at rotation boundaries.
-
-Rotated files land in the output folder using dumpcap's own naming
-convention: ``<prefix>_<00001>_<YYYYmmddHHMMSS>.pcapng``. Once the ring
-buffer cap is reached, dumpcap deletes the oldest chunk before starting the
-next one, so the chunk-processing pipeline must keep up with capture speed
-or it will lose unprocessed chunks.
-"""
-
 import argparse
 import shutil
 import subprocess

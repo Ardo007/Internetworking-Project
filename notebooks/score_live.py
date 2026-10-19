@@ -1,20 +1,3 @@
-"""
-Continuously score live DNS traffic from capture_live.py + run_zeek.py.
-
-run_zeek.py writes one Zeek output folder per 30-second dumpcap chunk
-(datas/zeek/<chunk>/dns.log). Per zeek_feature_extraction's "Live scoring"
-note, aggregates computed on a single 30s chunk would not match what the
-model was trained on (WINDOW_SECONDS=60) -- so this script watches
-datas/zeek/, waits for chunks to arrive in consecutive pairs (2 x 30s =
-60s), and scores each pair together as one capture, printing only domains
-flagged TUNNEL as they're found. Ctrl+C stops it and scores any leftover
-unpaired chunk before exiting.
-
-Usage (run alongside capture_live.py and run_zeek.py, each in their own
-terminal):
-  python notebooks\\score_live.py [--model-dir DIR] [--zeek-dir DIR]
-                                   [--threshold T] [--interval SECONDS]
-"""
 import argparse
 import csv
 import sys
@@ -30,13 +13,6 @@ import zeek_feature_extraction as zfe
 import model_artifacts as ma
 import score_capture as sc
 
-#: A capture_live.py run is a "session" in find_live_sessions' terms: chunks
-#: with consecutive dumpcap indices. dumpcap restarts its index at 00001 on
-#: every run, so pairing chunks by raw index alone (ignoring which run they
-#: came from) can join a stale leftover chunk from a previous run with a
-#: fresh one that happens to share an index number. find_live_sessions
-#: already solves this the same way the training-side own_benign pipeline
-#: does, so reuse it here instead of re-deriving the grouping.
 IDLE_SECONDS = 300
 
 DEFAULT_LOG_PATH = zfe.PROJECT_ROOT / "results" / "live_scoring_log.csv"
@@ -45,9 +21,6 @@ LOG_COLUMNS = ["scored_at", "session_id", "window_name", "window_id", "base_doma
 
 
 def open_log(log_path):
-    """Open log_path for appending, writing a header only if it's new/empty.
-    Rows from every run of this script accumulate in the same file, so it
-    reads as one continuous history rather than a scattered file per run."""
     log_path = Path(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     is_new = not log_path.exists() or log_path.stat().st_size == 0
@@ -91,11 +64,6 @@ def score_window(chunk_folders, window_name, artifacts, threshold, session_id=No
     if frame.empty:
         print(f"[{window_name}] no usable DNS records", flush=True)
         return
-    # mDNS/DNS-SD (RFC 6762 ".local", multicast port 5353) never leaves the
-    # local link -- it can't carry a tunnel payload to an off-network
-    # server, and it isn't represented in GraphTunnel's training captures,
-    # so the model has no real prior on it. Drop it before scoring rather
-    # than let it land near the decision boundary.
     frame = frame[~frame["qname"].str.casefold().str.endswith(".local")]
     if frame.empty:
         print(f"[{window_name}] no usable DNS records (only mDNS/.local traffic)", flush=True)
@@ -137,7 +105,7 @@ def score_window(chunk_folders, window_name, artifacts, threshold, session_id=No
 
 
 def watch(zeek_dir, artifacts, threshold, interval, log_path=None):
-    cursor = {}  # session_id -> number of that session's chunks already scored
+    cursor = {}
     log = None
     if log_path is not None:
         log_file, log_writer = open_log(log_path)

@@ -1,5 +1,3 @@
-"""Process GraphTunnel PCAPs with Zeek and generate a label manifest."""
-
 import csv
 import shutil
 import subprocess
@@ -24,7 +22,7 @@ LABELS = {
     "wildcard": 0,
     "tunnel": 1,
     "unknowntunnel": 1,
-    "unkowntunnel": 1,  # Spelling used by the source repository.
+    "unkowntunnel": 1,  
     "crossendpoint": 1,
 }
 

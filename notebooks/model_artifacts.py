@@ -1,26 +1,3 @@
-"""
-Model inputs and saved artefacts for the Zeek DNS tunnelling model
-==================================================================
-encode_inputs turns the model feature columns (see
-zeek_feature_extraction.FEATURE_COLUMNS) into the numeric input matrix. The
-categorical columns get a fixed set of levels, so the one-hot columns are the
-same whatever categories a data set happens to contain; training and live
-scoring both go through this function.
-
-Each trained configuration is saved to models/zeek_bilstm/<name>/:
-  model_1.keras ... model_N.keras   Keras 3 models, one per training run
-  scaler.joblib                     StandardScaler fitted on the training rows
-  label_encoder.joblib              LabelEncoder for Label (benign / tunnel)
-  features.json                     feature order, input (one-hot) columns,
-                                    window length, row caps and sampling
-                                    seed, training date, git commit and
-                                    library versions
-  NOT_FOR_EVALUATION.txt            only for a model trained on every
-                                    capture (features.json then has
-                                    "not_for_evaluation": true)
-load_artifacts reads the folder back; prepare_model_input applies the saved
-scaler and column order to a feature frame.
-"""
 import json
 import platform
 import subprocess
@@ -36,8 +13,6 @@ import zeek_feature_extraction as zfe
 MODELS_DIR = zfe.PROJECT_ROOT / "models" / "zeek_bilstm"
 NOT_FOR_EVALUATION_FILE = "NOT_FOR_EVALUATION.txt"
 
-#: Levels of the categorical features. One-hot encoding drops the first
-#: level of each ("tcp", "A"), as the original notebook's drop_first did.
 CATEGORY_LEVELS = {
     "proto": ["tcp", "udp"],
     "qtype_name": sorted(set(zfe.QTYPE_NAMES.values()) | {"OTHER"}),
@@ -45,12 +20,6 @@ CATEGORY_LEVELS = {
 
 
 def encode_inputs(features, input_columns=None):
-    """One-hot encode the categorical feature columns.
-
-    `features` holds model feature columns only (e.g. from to_ml_frame).
-    With `input_columns` (the training columns), the result is reindexed
-    to exactly those columns, missing ones filled with 0.
-    """
     X = features.copy()
     for column, levels in CATEGORY_LEVELS.items():
         if column not in X:
@@ -67,7 +36,6 @@ def encode_inputs(features, input_columns=None):
 
 
 def to_tensor(matrix):
-    """(rows, features) -> (rows, 1, features), the BiLSTM input shape."""
     matrix = np.asarray(matrix, dtype="float32")
     return matrix.reshape((matrix.shape[0], 1, matrix.shape[1]))
 
@@ -99,13 +67,6 @@ def environment_info():
 
 
 def save_artifacts(directory, models, scaler, label_encoder, feature_columns, input_columns, info):
-    """Save models, scaler, label encoder and features.json to `directory`.
-
-    `info` is merged into features.json (config, feature set, row caps,
-    sampling seed, training rows, hyperparameters, ...). With
-    info["not_for_evaluation"] true, NOT_FOR_EVALUATION.txt holds
-    info["note"] as well.
-    """
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     for old in directory.glob("model_*.keras"):
@@ -144,11 +105,6 @@ def save_artifacts(directory, models, scaler, label_encoder, feature_columns, in
 
 
 def load_artifacts(directory):
-    """Load a folder written by save_artifacts.
-
-    Returns a dict with models (list of Keras models), scaler,
-    label_encoder and features (the parsed features.json).
-    """
     import keras
 
     directory = Path(directory)
@@ -163,8 +119,6 @@ def load_artifacts(directory):
 
 
 def prepare_model_input(frame, artifacts):
-    """Feature frame (with domain aggregates) -> scaled model input tensor,
-    using the column order and scaler saved with the model."""
     spec = artifacts["features"]
     if spec["window_seconds"] != zfe.WINDOW_SECONDS:
         raise ValueError(f"Model was trained with {spec['window_seconds']} s windows, "

@@ -1,15 +1,3 @@
-"""Score every Zeek dns.log under an external-evaluation folder tree
-against a trained model, and summarize accuracy per tool.
-
-Walks Data/zeek/<dataset_name>/**/dns.log (as written by
-Ardashes_scripts/process_external_pcaps.py). The ground-truth label for
-each capture is inferred from its top-level subfolder name: captures
-under a "benign" folder are benign, everything else is tunnel -- override
-with --benign-folder if yours is named differently.
-
-Usage:
-  python notebooks\\score_external_batch.py <dataset_name> --model-dir DIR
-"""
 import argparse
 import sys
 from pathlib import Path

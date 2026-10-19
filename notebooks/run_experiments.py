@@ -1,35 +1,3 @@
-"""
-Run the model notebook for selected configurations, from the command line
-=========================================================================
-Executes notebooks/dns_tunneling_bilstm_model.ipynb top to bottom in a fresh
-.venv kernel, with its settings overridden so that only the requested
-configurations are trained, and streams the notebook's output to the console:
-Keras' per-epoch progress, then each configuration's results. Build_model and
-the rest of the notebook run exactly as written. --final trains the final
-model on every capture (not for evaluation: no metrics, only its training
-record).
-
-Examples, from the repo root:
-
-  .\\.venv\\Scripts\\python.exe notebooks\\run_experiments.py --sanity
-  .\\.venv\\Scripts\\python.exe notebooks\\run_experiments.py --run run3_default_50ep --epochs 50 --lofo DNS-shell
-  .\\.venv\\Scripts\\python.exe notebooks\\run_experiments.py --run run4_default_50ep --epochs 50 --final
-
-A configuration is done once results/runs/<run>/<name>.json exists; that file
-is written after the configuration's models are saved. Done configurations
-are skipped, so re-running a command is safe; --overwrite retrains them and
-replaces their models and results. A configuration stopped part-way leaves
-no results file and is trained from scratch next time.
-
-Each invocation writes:
-  models/zeek_bilstm/<run>/<name>/          models, scaler, label encoder, features.json
-  results/runs/<run>/<name>.json            metrics and per-epoch loss histories (for the
-                                            final model: training rows and histories only)
-  results/executed/<run>__<names>.ipynb     executed notebook copy (gitignored)
-  results/executed/<run>__<names>.log       everything printed to the console (gitignored)
-  results/executed/<run>__<names>.kernel.log   the kernel process's own warnings (gitignored)
---sanity writes the same under results/executed/sanity/ instead.
-"""
 import argparse
 import asyncio
 import json
@@ -94,7 +62,6 @@ def parse_args(argv=None):
 
 
 def output_roots(args):
-    """(models root, results root) for this invocation."""
     if args.sanity:
         return SANITY_DIR / "models", SANITY_DIR / "runs"
     return PROJECT_ROOT / "models" / "zeek_bilstm", PROJECT_ROOT / "results" / "runs"
@@ -106,7 +73,6 @@ def configuration_names(args):
 
 
 def plan(args):
-    """(names to train, names skipped because their results exist)."""
     _, runs_root = output_roots(args)
     to_train, skipped = [], []
     for name in configuration_names(args):
@@ -116,7 +82,6 @@ def plan(args):
 
 
 def override_code(args, to_train):
-    """Python run right after the notebook's settings cell."""
     models_root, runs_root = output_roots(args)
     lines = [
         "from pathlib import Path",
@@ -154,8 +119,6 @@ def git_state():
 
 
 class Console:
-    """Print to the console and append to a log file."""
-
     def __init__(self, log_path):
         self.log = open(log_path, "w", encoding="utf-8")
 
@@ -170,7 +133,6 @@ class Console:
 
 
 def run_notebook(notebook_path, overrides, executed_path, console, kernel_log_path):
-    """Execute the notebook in a fresh kernel, streaming output. Returns True if every cell ran."""
     from jupyter_client.manager import start_new_kernel
 
     nb = json.loads(Path(notebook_path).read_text(encoding="utf-8"))

@@ -1,16 +1,3 @@
-"""Model loading and per-minute scoring for the web app (web version of
-notebooks/score_live.py's scoring core).
-
-Feature extraction and model input preparation are imported from
-notebooks/ (zeek_feature_extraction, model_artifacts), never copied, so
-live features stay identical to the ones the model was trained on.
-
-Unlike score_live.py, which scores pairs of 30 s chunks (each pair
-straddles a minute boundary, so it is scored as two partial windows),
-score_minute scores exactly one epoch-aligned calendar minute -- the
-window assign_windows gives training data.
-"""
-
 import csv
 import json
 import sys
@@ -22,8 +9,8 @@ import numpy as np
 
 NOTEBOOKS_DIR = Path(__file__).resolve().parents[1] / "notebooks"
 sys.path.insert(0, str(NOTEBOOKS_DIR))
-import zeek_feature_extraction as zfe  # noqa: E402
-import model_artifacts as ma  # noqa: E402
+import zeek_feature_extraction as zfe
+import model_artifacts as ma
 
 DEFAULT_LOG_PATH = zfe.PROJECT_ROOT / "results" / "web_scoring_log.csv"
 LOG_COLUMNS = ["scored_at", "session_id", "window_name", "window_id", "base_domain",
@@ -31,7 +18,6 @@ LOG_COLUMNS = ["scored_at", "session_id", "window_name", "window_id", "base_doma
 
 
 def default_model_dir():
-    """Newest models/zeek_bilstm/*/final, the same rule as score_capture.py."""
     models_root = zfe.PROJECT_ROOT / "models" / "zeek_bilstm"
     candidates = sorted(models_root.glob("*/final"), key=lambda p: p.stat().st_mtime, reverse=True)
     if not candidates:
@@ -40,9 +26,6 @@ def default_model_dir():
 
 
 def load_model(directory, n_models=1):
-    """Load the first `n_models` models of a model folder written by
-    model_artifacts.save_artifacts, in the same dict shape as
-    ma.load_artifacts so ma.prepare_model_input works unchanged."""
     import keras
 
     directory = Path(directory)
@@ -59,11 +42,6 @@ def load_model(directory, n_models=1):
 
 
 def score_frame(frame, artifacts, threshold):
-    """Score a frame of query records (one capture, windows assigned) and
-    summarise it per (window, domain), as score_live.score_window does.
-
-    Returns the summary sorted by mean_tunnel_prob, highest first.
-    """
     frame = zfe.add_domain_aggregates(frame)
     ml = zfe.to_ml_frame(
         frame, label_col=None,
@@ -88,15 +66,6 @@ def score_frame(frame, artifacts, threshold):
 
 
 def score_minute(dns_logs, minute_start, capture_id, artifacts, threshold):
-    """Score the calendar minute starting at `minute_start` (epoch seconds,
-    a multiple of 60) from the dns.log files of the chunks around it.
-
-    The logs may cover more than that minute (the chunk before it is
-    included so queries and responses split across the boundary are
-    re-joined); only records whose window is this minute are scored.
-    Returns the per-domain summary, or None if the minute has no usable
-    DNS records.
-    """
     if not dns_logs:
         return None
     frame = zfe.extract_query_records_from_zeek(
@@ -105,8 +74,6 @@ def score_minute(dns_logs, minute_start, capture_id, artifacts, threshold):
     if frame.empty:
         return None
     frame = frame[frame["window_start"] == minute_start]
-    # mDNS (.local, link-local only) can't carry a tunnel off the network and
-    # isn't in the training captures -- dropped, as score_live.py does.
     frame = frame[~frame["qname"].str.casefold().str.endswith(".local")]
     if frame.empty:
         return None
@@ -114,9 +81,6 @@ def score_minute(dns_logs, minute_start, capture_id, artifacts, threshold):
 
 
 class ScoreLog:
-    """Appends every scored (minute, domain) row to a CSV, with the same
-    columns as score_live.py's live_scoring_log.csv."""
-
     def __init__(self, path=DEFAULT_LOG_PATH):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)

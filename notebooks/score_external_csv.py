@@ -1,17 +1,3 @@
-"""
-Score a synthetic dns.log reconstructed from a non-Zeek source (e.g. a
-Wireshark CSV export) against a trained DNS-tunnelling model.
-
-Same as score_capture.py, with one addition: response_min_ttl can't be
-recovered from a Wireshark one-line "Info" summary (no raw TTL values are
-printed there), so rows missing it are imputed with the model's own
-training-set mean for that feature -- which becomes exactly 0 after
-scaling, i.e. a neutral "no signal" value rather than one that could bias
-the verdict either way.
-
-Usage:
-  python notebooks\\score_external_csv.py <synthetic-dns.log-path> --model-dir DIR [--capture-id NAME] [--true-label tunnel|benign]
-"""
 import argparse
 import sys
 from pathlib import Path
@@ -42,8 +28,6 @@ def score(dns_log_path, model_dir, capture_id, threshold=0.5, true_label=None):
         return None
     frame = zfe.add_domain_aggregates(frame)
 
-    # Impute response_min_ttl (not recoverable from this source) with the
-    # model's own training mean for that column -> exactly 0 after scaling.
     spec = artifacts["features"]
     if frame["response_min_ttl"].isna().any():
         ttl_idx = spec["input_columns"].index("response_min_ttl")

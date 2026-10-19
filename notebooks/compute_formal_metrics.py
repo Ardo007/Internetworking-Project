@@ -1,38 +1,3 @@
-"""
-Compute EER and F1 for the DNS-tunnelling detector (EXTERNAL + GraphTunnel self-check).
-
-Two independent evaluations are produced here, because only one of them is a
-valid measure of real-world performance:
-
-  EXTERNAL
-    liam_run2 scored against data it never trained on:
-      - Tu et al. (2023) multi-tool capture (Data/zeek/external_tu2023,
-        8 tools + benign)
-      - the malware-traffic-analysis.net dnscat2 capture, reconstructed from
-        its Wireshark CSV (Data/dns-tunneling-analysis-dnscat2-main)
-    This EER/F1 is a genuine generalisation measure.
-
-  GRAPHTUNNEL SELF-CHECK
-    liam_run2 scored against config B's held-out GraphTunnel rows
-    (test + heldout roles). liam_run2's own features.json says it was
-    trained on EVERY GraphTunnel capture ("not_for_evaluation": true,
-    "config_description": "final model: every capture is training data").
-    These rows were in its training set, so this number is NOT a valid
-    generalisation metric -- it's reported only as a sanity check (it
-    should come out close to perfect; if it doesn't, something is actually
-    wrong) and is clearly labelled as such everywhere it's printed.
-    zeek_experiments._require_evaluable() raises on this exact situation
-    for the project's own evaluation helpers; this script deliberately
-    bypasses that guard for the self-check and prints the warning instead.
-
-Per-row (window, domain) probabilities are written to results/ as CSVs so
-you can recompute metrics, plot ROC curves, etc. without rerunning models.
-
-Usage (from the activated venv, at the repo root):
-  python notebooks\\compute_formal_metrics.py
-  python notebooks\\compute_formal_metrics.py --model-dir "models\\zeek_bilstm\\liam_run2"
-  python notebooks\\compute_formal_metrics.py --skip-graphtunnel   # external only, skip/avoid rebuilding the big feature cache
-"""
 import argparse
 import sys
 from pathlib import Path
@@ -46,13 +11,6 @@ import model_artifacts as ma
 
 
 def eer_and_f1(probs, labels, threshold=0.5):
-    """labels: bool array, True = tunnel. probs: tunnel probability in [0, 1].
-
-    EER and F1 both need rows of both classes to mean anything (EER is a
-    FPR/FNR crossover; F1 needs both precision and recall to be defined).
-    A single-class subset (e.g. one source that's 100% tunnel) gets "n/a"
-    for those two fields instead of crashing or silently reporting 0%.
-    """
     from sklearn.metrics import roc_curve, f1_score
 
     probs = np.asarray(probs, dtype=float)
@@ -102,7 +60,6 @@ def print_metrics(name, m):
 
 
 def score_dns_log(dns_log_path, capture_id, artifacts):
-    """Per-(window, domain) tunnel_prob for one dns.log, ensembled across the model's folds."""
     frame = zfe.extract_query_records_from_zeek(
         dns_log_path, capture_id, category="own_benign", tool="external", label=0,
     )
@@ -122,7 +79,6 @@ def score_dns_log(dns_log_path, capture_id, artifacts):
 
 
 def external_rows(artifacts, data_root):
-    """Per-(capture, window, domain) tunnel_prob + true label for every external dataset found."""
     rows = []
 
     tu_root = data_root / "zeek" / "external_tu2023"
@@ -159,11 +115,6 @@ def external_rows(artifacts, data_root):
 
 
 def graphtunnel_self_check_rows(artifacts, config="B"):
-    """liam_run2 scored on config B's held-out (test + heldout) GraphTunnel rows.
-
-    These rows were in liam_run2's own training set (it trains on every
-    capture) -- see the module docstring. Not a valid generalisation metric.
-    """
     import dataset_splits as ds
     import zeek_experiments as ze
 

@@ -147,7 +147,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   let state = null;
-  let clockOffset = 0;  // server clock - browser clock, ms
+  let clockOffset = 0;
 
   const time = (epoch) => new Date(epoch * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const timeSec = (epoch) => new Date(epoch * 1000).toLocaleTimeString();
@@ -155,8 +155,6 @@
   const serverNow = () => (Date.now() + clockOffset) / 1000;
   const active = (s) => ["starting", "capturing", "stopping"].includes(s);
 
-  // Every value from the server is set with textContent: domain names come
-  // straight from captured traffic and must never be parsed as HTML.
   function el(tag, text, className) {
     const node = document.createElement(tag);
     if (text != null) node.textContent = text;
@@ -261,7 +259,6 @@
       $("domains-title").textContent = "Domains this minute";
       return;
     }
-    // Every flagged domain, then the highest-scoring benign ones.
     const shown = [...latest.flagged];
     for (const row of latest.top) if (!shown.some((d) => d.domain === row.domain)) shown.push(row);
     for (const row of shown) {

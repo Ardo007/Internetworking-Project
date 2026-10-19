@@ -1,23 +1,3 @@
-"""Run Zeek (via Docker) over an external PCAP folder, independent of the
-GraphTunnel training manifest.
-
-This dataset (and others like it) splits each capture into two one-way
-files, "<base>_up.pcapng" (client->server) and "<base>_down.pcapng"
-(server->client), captured from each host separately. Zeek needs to see
-both directions in one file to pair a query with its response (otherwise
-every record comes out query-only, with no response/rcode/TTL features),
-so before running Zeek this script merges each *_up/*_down pair with
-mergecap (bundled with Wireshark, same installation capture_live.py
-already looks for) into "<base>.pcapng", and runs Zeek on the merged file.
-A file with no up/down counterpart (nothing to merge) is Zeek'd as-is.
-
-Expects PCAPs under Data/raw/<dataset_name>/<tool>/<file>.pcap(ng), writes
-Zeek JSON logs to Data/zeek/<dataset_name>/<tool>/<file>/dns.log.
-
-Usage:
-  python Ardashes_scripts\\process_external_pcaps.py <dataset_name>
-  (e.g. python Ardashes_scripts\\process_external_pcaps.py external_tu2023)
-"""
 import re
 import time
 import shutil
@@ -74,8 +54,6 @@ def run_zeek(pcap, output_directory):
 
 
 def pair_up_down(pcaps, merged_dir, mergecap):
-    """Group *_up/*_down pairs and merge each into merged_dir. Returns the
-    list of PCAPs to actually run Zeek on (merged pairs + unpaired files)."""
     by_base = {}
     singles = []
     for pcap in pcaps:
@@ -96,9 +74,6 @@ def pair_up_down(pcaps, merged_dir, mergecap):
                     [str(mergecap), "-w", str(merged), str(sides["up"]), str(sides["down"])],
                     check=True,
                 )
-                # Docker Desktop (WSL2) bind mounts can lag slightly behind a
-                # just-written host file -- wait for it to actually appear
-                # and settle (size stops growing) before handing it to Zeek.
                 for attempt in range(20):
                     if usable_log(merged):
                         size1 = merged.stat().st_size
@@ -110,7 +85,6 @@ def pair_up_down(pcaps, merged_dir, mergecap):
                     raise RuntimeError(f"mergecap did not produce a stable output file: {merged}")
             to_process.append(merged)
         else:
-            # No counterpart (or no mergecap available) -- process one-way as-is.
             to_process.extend(sides.values())
     return sorted(to_process)
 
@@ -137,7 +111,6 @@ def main():
     if not all_pcaps:
         raise FileNotFoundError(f"No PCAP files found under: {raw_root}")
 
-    # Group+merge per tool subfolder so merged files land next to their source.
     by_folder = {}
     for p in all_pcaps:
         by_folder.setdefault(p.parent, []).append(p)
